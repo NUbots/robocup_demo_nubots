@@ -226,5 +226,49 @@ ls ./scripts/vision/exported_model
 # Copy model.engine to vision folder.
 cp ./scripts/vision/exported_model/model.engine ./src/vision/model/
 # Edit ~/Workspace/booster/robocup_demo/src/vision/config/vision.yaml 
+# Edit ~/Workspace/booster/robocup_demo/src/vision/config/vision_smi.yaml 
 # Modify the value of detection_model.model_path  to "./src/vision/model/model.engine"
 ```
+
+## Run the Simulation
+Download the following files from the official website and move them to ~/Workspace/tools directory.
+
+isaac_package_0.0.6.run
+
+booster-runer-full-0.0.10.run
+
+Move the downloaded files to ~/Workspace/tools directory.
+
+```bash
+cd ~/Workspace/tools
+chmod a+x isaac_package_0.0.6.run
+chmod a+x booster-runner-full-0.0.10.run
+```
+## Start the Simulation Environment
+```bash
+# Open a new terminal to start Isaac Sim(you can also use double-click to start it)
+cd ~/Workspace/tools
+./isaac_package_0.0.6.run
+# If the Isaac installation path is different, pass it as an argument like this:
+# ./isaac_package_0.0.5.run ~/.loca/share/ov/pkg/isacc-sim-xxxx/python.sh
+# The script will launch Isaac Sim's GUI. Please keep the terminal open and not close it.
+# If you want to stop it, just close the terminal.
+
+# Open a new terminal to start Booster Motion Coltrol(you can also use double-click to start it)
+cd ~/Workspace/tools
+./booster-runner-full-0.0.10.run
+# The script will keep running. Please keep the terminal open and not close it.
+# If you want to stop it, just close the terminal.
+
+# Open a new terminal to start robocup
+cd ~/Workspace/booster/robocup_demo
+# If you have change the code, rebuild it.
+./scripts/build.sh
+# Start the programs.
+./scripts/sim_start.sh
+# This will launch brain_node, vision_node, game_controller_node, joystick_node in the background.
+# You can check their running status via brain.log, vision.log, game_controller.log, joystick.log.
+# If you want to stop them, just run ./scripts/sim_stop.sh
+```
+
+## Basic Official Documents to start robot in the simulation environment
