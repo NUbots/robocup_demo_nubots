@@ -73,7 +73,7 @@ void BrainTree::initEntry()
     setEntry<bool>("gc_is_under_penalty", false);
 
     setEntry<bool>("treat_person_as_robot", false);
-    setEntry<int>("control_state", 0);
+    setEntry<int>("control_state", 3);  // (ACTION mode)
     setEntry<bool>("B_pressed", false);
 
     // fallRecovery相关
