@@ -583,9 +583,8 @@ vector<GameObject> Brain::getGameObjects(const vision_interface::msg::Detections
 {
     vector<GameObject> res;
 
-    auto timestamp = detections.header.stamp;
-
-    rclcpp::Time timePoint(timestamp.sec, timestamp.nanosec);
+    // Use current ROS system time instead of camera timestamp
+    rclcpp::Time timePoint = get_clock()->now();
 
     for (int i = 0; i < detections.detected_objects.size(); i++)
     {
