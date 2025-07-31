@@ -48,6 +48,7 @@
                         <ReactiveSequence _while="gc_game_state=='PLAY'" name="play">
                             <SubTree ID="StrikerPlay" _autoremap="true" _while="player_role == 'striker'" />
                             <SubTree ID="GoalKeeperPlay" _autoremap="true" _while="player_role == 'goal_keeper'" />
+                            <SelfLocate mode="trust_direction" />
                         </ReactiveSequence>
 
                         <ReactiveSequence _while="gc_game_state=='END'" name="end">
