@@ -313,13 +313,14 @@ NodeStatus Adjust::tick()
         return NodeStatus::SUCCESS;
     }
 
-    double turnThreshold, vxLimit, vyLimit, vthetaLimit, maxRange, minRange;
+    double turnThreshold, vxLimit, vyLimit, vthetaLimit, maxRange, minRange, speedFactor;
     getInput("turn_threshold", turnThreshold);
     getInput("vx_limit", vxLimit);
     getInput("vy_limit", vyLimit);
     getInput("vtheta_limit", vthetaLimit);
     getInput("max_range", maxRange);
     getInput("min_range", minRange);
+    getInput("speed_factor", speedFactor);
     string position;
     getInput("position", position);
 
@@ -331,15 +332,34 @@ NodeStatus Adjust::tick()
     double ballRange = brain->data->ball.range;
     double ballYaw = brain->data->ball.yawToRobot;
 
-    double s = 0.4;
-    double r = 0.8;
-    vx = -s * dir * sin(ballYaw);
+    // Dynamic adjustment parameters - faster and more aggressive
+    double s = 0.8 * speedFactor;  // Increased from 0.4 to 0.8
+    double r = 0.4;  // Reduced from 0.8 to 0.4 for faster turning
+    
+    // Calculate error magnitude for dynamic scaling
+    double angleError = fabs(deltaDir);
+    double rangeError = fabs(ballRange - (maxRange + minRange) / 2.0);
+    
+    // Dynamic speed scaling based on error magnitude (higher error = faster movement)
+    double angleSpeedMultiplier = 1.0 + angleError * 2.0;  // Speed up when angle error is large
+    double rangeSpeedMultiplier = 1.0 + rangeError * 1.5;   // Speed up when range error is large
+    double dynamicSpeedFactor = min(2.5, max(1.0, angleSpeedMultiplier * rangeSpeedMultiplier)) * speedFactor;
+    
+    // Core adjustment velocities with dynamic scaling
+    vx = -s * dir * sin(ballYaw) * dynamicSpeedFactor;
+    vy = s * dir * cos(ballYaw) * dynamicSpeedFactor;
+    vtheta = (ballYaw - dir * s * 0.5) / r * dynamicSpeedFactor;
+    
+    // More aggressive range adjustment
+    double rangeAdjustmentSpeed = 0.3 * speedFactor;  // Increased from 0.1
     if (ballRange > maxRange)
-        vx += 0.1;
-    if (ballRange < maxRange)
-        vx -= 0.1;
-    vy = s * dir * cos(ballYaw);
-    vtheta = (ballYaw - dir * s) / r;
+        vx += rangeAdjustmentSpeed * (ballRange - maxRange);  // Proportional to error
+    else if (ballRange < minRange)
+        vx -= rangeAdjustmentSpeed * (minRange - ballRange);  // Proportional to error
+    
+    // Add some forward bias when range is good to maintain momentum
+    if (ballRange >= minRange && ballRange <= maxRange && fabs(deltaDir) > 0.2)
+        vx += 0.2 * speedFactor;
 
     vx = cap(vx, vxLimit, -vxLimit);
     vy = cap(vy, vyLimit, -vyLimit);

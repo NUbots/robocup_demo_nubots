@@ -5,7 +5,7 @@
         <Sequence name="root">
             <ReactiveSequence>
                <SubTree ID="CamFindAndTrackBall" _autoremap="true" _while="control_state>=2"/>
-               <Kick _while="B_pressed" vx_limit="1.2" vy_limit="0.4" min_msec_kick="500"/>
+               <Kick _while="B_pressed" vx_limit="1.2" vy_limit="0.4" max_msec_kick="3000" kick_range="0.3"/>
             </ReactiveSequence>
         </Sequence>
      </BehaviorTree>

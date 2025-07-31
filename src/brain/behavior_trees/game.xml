@@ -36,13 +36,14 @@
                             <MoveToPoseOnField x="-2.0" _while="player_role == 'striker'" vtheta_limit="2.0"  vx_limit="0.4" />
                             <MoveToPoseOnField x="-5.5" _while="player_role == 'goal_keeper'" vtheta_limit="2.0"  vx_limit="0.4" />
                             <SelfLocate mode="trust_direction" />
-                            <WaveHand _while="we_just_scored" action="start" />
+                            <!-- <WaveHand _while="we_just_scored" action="start" /> -->
                         </ReactiveSequence>
 
                         <ReactiveSequence _while="gc_game_state=='SET'" name="set">
                             <SubTree ID="CamFindAndTrackBall" _autoremap="true" />
                             <SetVelocity />
                             <WaveHand action="stop" />
+                            <SelfLocate mode="trust_direction" />
                         </ReactiveSequence>
 
                         <ReactiveSequence _while="gc_game_state=='PLAY'" name="play">
