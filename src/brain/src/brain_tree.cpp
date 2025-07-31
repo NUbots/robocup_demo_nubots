@@ -556,52 +556,82 @@ NodeStatus GoalieDecide::tick()
 NodeStatus Kick::onStart()
 {
     _startTime = brain->get_clock()->now();
-
-    double vxLimit, vyLimit;
-    getInput("vx_limit", vxLimit);
-    getInput("vy_limit", vyLimit);
-    int minMSecKick;
-    getInput("min_msec_kick", minMSecKick);
-    double vxFactor = brain->config->vxFactor;
-    double yawOffset = brain->config->yawOffset;
-
-    double adjustedYaw = brain->data->ball.yawToRobot - yawOffset;
-    double tx = cos(adjustedYaw) * brain->data->ball.range;
-    double ty = sin(adjustedYaw) * brain->data->ball.range;
-
-    double vx, vy;
-
-    if (fabs(ty) < 0.01 && fabs(adjustedYaw) < 0.01)
-    {
-        vx = vxLimit;
-        vy = 0.0;
-    }
-    else
-    {
-        vy = ty > 0 ? vyLimit : -vyLimit;
-        vx = vy / ty * tx * vxFactor;
-        if (fabs(vx) > vxLimit)
-        {
-            vy *= vxLimit / vx;
-            vx = vxLimit;
-        }
-    }
-
-    double speed = norm(vx, vy);
-
-    _msecKick = speed > 1e-5 ? minMSecKick + static_cast<int>(brain->data->ball.range / speed * 1000) : minMSecKick;
-
-    brain->client->setVelocity(vx, vy, 0, false, false, false);
+    _initialBallRange = brain->data->ball.range;
     return NodeStatus::RUNNING;
 }
 
 NodeStatus Kick::onRunning()
 {
-    if (brain->msecsSince(_startTime) < _msecKick)
-        return NodeStatus::RUNNING;
+    // Check if we should timeout
+    int maxMSecKick;
+    getInput("max_msec_kick", maxMSecKick);
+    if (brain->msecsSince(_startTime) > maxMSecKick)
+    {
+        brain->client->setVelocity(0, 0, 0);
+        return NodeStatus::SUCCESS;
+    }
 
-    brain->client->setVelocity(0, 0, 0);
-    return NodeStatus::SUCCESS;
+    // Check if ball is no longer detected or moved significantly away (successful kick)
+    if (!brain->data->ballDetected || brain->data->ball.range > _initialBallRange + 0.5)
+    {
+        brain->client->setVelocity(0, 0, 0);
+        return NodeStatus::SUCCESS;
+    }
+
+    // Get parameters
+    double vxLimit, vyLimit, kickRange;
+    getInput("vx_limit", vxLimit);
+    getInput("vy_limit", vyLimit);
+    getInput("kick_range", kickRange);
+    double vxFactor = brain->config->vxFactor;
+    double yawOffset = brain->config->yawOffset;
+
+    // Calculate real-time velocity based on current ball position
+    double adjustedYaw = brain->data->ball.yawToRobot - yawOffset;
+    double ballRange = brain->data->ball.range;
+    
+    // If ball is very close, reduce velocity for precision
+    double rangeFactor = ballRange > kickRange ? 1.0 : (ballRange / kickRange) * 0.5 + 0.5;
+    
+    double tx = cos(adjustedYaw) * ballRange;
+    double ty = sin(adjustedYaw) * ballRange;
+
+    double vx, vy;
+
+    if (fabs(ty) < 0.01 && fabs(adjustedYaw) < 0.01)
+    {
+        vx = vxLimit * rangeFactor;
+        vy = 0.0;
+    }
+    else
+    {
+        // Calculate velocity to reach ball position
+        vy = ty > 0 ? vyLimit : -vyLimit;
+        vx = vy / ty * tx * vxFactor;
+        
+        // Apply range factor to slow down when close
+        vx *= rangeFactor;
+        vy *= rangeFactor;
+        
+        // Cap velocities
+        if (fabs(vx) > vxLimit)
+        {
+            vy *= vxLimit / fabs(vx);
+            vx = vx > 0 ? vxLimit : -vxLimit;
+        }
+        if (fabs(vy) > vyLimit)
+        {
+            vx *= vyLimit / fabs(vy);
+            vy = vy > 0 ? vyLimit : -vyLimit;
+        }
+    }
+
+    // Add some rotational velocity to align with ball
+    double vtheta = brain->data->ball.yawToRobot * 1.5;
+    vtheta = cap(vtheta, 1.0, -1.0); // Limit rotational velocity
+
+    brain->client->setVelocity(vx, vy, vtheta, false, false, false);
+    return NodeStatus::RUNNING;
 }
 
 void Kick::onHalted()
