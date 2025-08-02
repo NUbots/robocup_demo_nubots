@@ -5,7 +5,7 @@
             <SubTree ID="CamFindAndTrackBall" _autoremap="true" />
 
             <Sequence _while="control_state==3" >
-                <Adjust turn_threshold="0.4" max_range="0.6" min_range="0.4" vx_limit="0.2" vy_limit="0.2" vtheta_limit="1.0"  />
+                <Adjust turn_threshold="0.4" max_range="0.6" min_range="0.4" vx_limit="0.6" vy_limit="0.6" vtheta_limit="1.5" speed_factor="1.2"  />
             </Sequence>
         </Sequence>
     </BehaviorTree>

@@ -180,11 +180,12 @@ public:
     {
         return {
             InputPort<double>("turn_threshold", 0.2, "If the angle to the ball exceeds this value, the robot will first turn to face the ball"),
-            InputPort<double>("vx_limit", 0.1, "Limit for vx during adjustment, [-limit, limit]"),
-            InputPort<double>("vy_limit", 0.1, "Limit for vy during adjustment, [-limit, limit]"),
-            InputPort<double>("vtheta_limit", 0.4, "Limit for vtheta during adjustment, [-limit, limit]"),
+            InputPort<double>("vx_limit", 0.6, "Limit for vx during adjustment, [-limit, limit]"),
+            InputPort<double>("vy_limit", 0.6, "Limit for vy during adjustment, [-limit, limit]"),
+            InputPort<double>("vtheta_limit", 1.5, "Limit for vtheta during adjustment, [-limit, limit]"),
             InputPort<double>("max_range", 1.5, "When the ball range exceeds this value, move slightly forward"),
             InputPort<double>("min_range", 1.0, "When the ball range is smaller than this value, move slightly backward"),
+            InputPort<double>("speed_factor", 1.0, "Multiplier for adjustment speed (higher = faster)"),
             InputPort<string>("position", "offense", "offense | defense, determines which direction to kick the ball"),
         };
     }
@@ -203,8 +204,8 @@ public:
     static PortsList providedPorts()
     {
         return {
-            InputPort<int>("min_msec_kick", 500, "The minimum duration (in milliseconds) for executing a kick action"),
-            InputPort<int>("msec_stand", 500, "The number of milliseconds after issuing a stop command"),
+            InputPort<int>("max_msec_kick", 3000, "The maximum duration (in milliseconds) for executing a kick action"),
+            InputPort<double>("kick_range", 0.3, "Range threshold to reduce velocity for precision"),
             InputPort<double>("vx_limit", 1.2, "vx limit"),
             InputPort<double>("vy_limit", 0.4, "vy limit"),
         };
@@ -220,7 +221,7 @@ public:
 private:
     Brain *brain;
     rclcpp::Time _startTime;
-    int _msecKick = 1000;
+    double _initialBallRange = 0.0;
 };
 
 // A full sweep of the field of view involves first tilting the head upwards in one direction,
