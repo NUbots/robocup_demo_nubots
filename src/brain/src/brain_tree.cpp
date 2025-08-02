@@ -229,40 +229,92 @@ NodeStatus Chase::tick()
     getInput("vtheta_limit", vthetaLimit);
     getInput("dist", dist);
 
-    double ballRange = brain->data->ball.range;
-    double ballYaw = brain->data->ball.yawToRobot;
+    // Goal center position (opponent's goal)
+    double goalX = brain->config->fieldDimensions.length / 2 + 1.0;
+    double goalY = 0.0;
 
-    Pose2D target_f, target_r;
-    if (brain->data->robotPoseToField.x - brain->data->ball.posToField.x > (_state == "chase" ? 1.0 : 0.0))
+    // Calculate ball-to-goal vector
+    double ballToGoalX = goalX - brain->data->ball.posToField.x;
+    double ballToGoalY = goalY - brain->data->ball.posToField.y;
+    double ballToGoalDist = sqrt(ballToGoalX * ballToGoalX + ballToGoalY * ballToGoalY);
+    
+    // Normalize
+    if (ballToGoalDist > 0.1)
     {
-        _state = "circle_back";
+        ballToGoalX /= ballToGoalDist;
+        ballToGoalY /= ballToGoalDist;
+    }
+    else
+    {
+        ballToGoalX = 1.0;
+        ballToGoalY = 0.0;
+    }
 
-        target_f.x = brain->data->ball.posToField.x - dist;
+    // Target position: behind ball along ball-to-goal vector
+    double targetX = brain->data->ball.posToField.x - ballToGoalX * dist;
+    double targetY = brain->data->ball.posToField.y - ballToGoalY * dist;
+
+
+    // If approaching from infront of ball, move to the side of the ball
+    if (brain->data->robotPoseToField.x - brain->data->ball.posToField.x > (_state == "chase" ? 1.0 : 0.0)) {
+        targetX = brain->data->ball.posToField.x - dist;
 
         if (brain->data->robotPoseToField.y > brain->data->ball.posToField.y - _dir)
             _dir = 1.0;
         else
             _dir = -1.0;
+        targetY = brain->data->robotPoseToField.y + _dir * dist;
+    }
 
-        target_f.y = brain->data->ball.posToField.y + _dir * dist;
+    // Convert to robot coordinates
+    Pose2D target_f{targetX, targetY, 0};
+    Pose2D target_r = brain->data->field2robot(target_f);
+
+    // Calculate distance to target position
+    double distanceToTarget = sqrt(target_r.x * target_r.x + target_r.y * target_r.y);
+    
+    // Simple proportional control for position
+    double vx = target_r.x * 2.0;
+    double vy = target_r.y * 2.0;
+    
+    // Calculate final desired heading (toward goal)
+    double finalHeading = atan2(ballToGoalY, ballToGoalX);
+    double currentHeading = brain->data->robotPoseToField.theta;
+    
+    // Calculate heading error to final goal orientation
+    double finalHeadingError = finalHeading - currentHeading;
+    while (finalHeadingError > M_PI) finalHeadingError -= 2 * M_PI;
+    while (finalHeadingError < -M_PI) finalHeadingError += 2 * M_PI;
+    
+    // Progressive heading control based on distance to target
+    double vtheta;
+    if (distanceToTarget > 1.0)
+    {
+        // Far from target: Face the direction we're walking
+        double walkingDirection = atan2(target_r.y, target_r.x);
+        double walkingHeadingError = walkingDirection - 0.0; // Robot's current heading in robot frame is 0
+        while (walkingHeadingError > M_PI) walkingHeadingError -= 2 * M_PI;
+        while (walkingHeadingError < -M_PI) walkingHeadingError += 2 * M_PI;
+        vtheta = walkingHeadingError * 1.5;
+    }
+    else if (distanceToTarget > 0.5)
+    {
+        // Medium distance: Interpolate between walking direction and goal direction
+        double walkingDirection = atan2(target_r.y, target_r.x);
+        double walkingHeadingError = walkingDirection - 0.0;
+        while (walkingHeadingError > M_PI) walkingHeadingError -= 2 * M_PI;
+        while (walkingHeadingError < -M_PI) walkingHeadingError += 2 * M_PI;
+        
+        double progressFactor = (1.0 - distanceToTarget) / 0.7; // 0 at 1.0m, 1 at 0.3m
+        vtheta = walkingHeadingError * (1.0 - progressFactor) + finalHeadingError * progressFactor;
     }
     else
-    { // chase
-        _state = "chase";
-        target_f.x = brain->data->ball.posToField.x - dist;
-        target_f.y = brain->data->ball.posToField.y;
+    {
+        // Close to target: Full heading control toward goal
+        vtheta = finalHeadingError * 2.0;
     }
 
-    target_r = brain->data->field2robot(target_f);
-
-    double vx = target_r.x;
-    double vy = target_r.y;
-    double vtheta = ballYaw * 2.0;
-
-    double linearFactor = 1 / (1 + exp(3 * (ballRange * fabs(ballYaw)) - 3));
-    vx *= linearFactor;
-    vy *= linearFactor;
-
+    // Apply limits
     vx = cap(vx, vxLimit, -vxLimit);
     vy = cap(vy, vyLimit, -vyLimit);
     vtheta = cap(vtheta, vthetaLimit, -vthetaLimit);

@@ -26,6 +26,11 @@ public:
     Pose2D odomToField;      // The origin of the Odom coordinate system in the Field coordinate system, can be calibrated using known positions, e.g., by calibration at the start of the game
     Pose2D robotPoseToField; // The robot's current position and orientation in the field coordinate system. The field center is the origin, with the x-axis pointing towards the opponent's goal (forward), and the y-axis pointing to the left. The positive direction of theta is counterclockwise.
 
+    // Current velocity commands
+    double currentVx = 0.0;    // Current forward velocity command (m/s)
+    double currentVy = 0.0;    // Current lateral velocity command (m/s)
+    double currentVtheta = 0.0; // Current rotational velocity command (rad/s)
+
     // Head position, updated through lowStateCallback
     double headPitch; // The current head pitch, in radians. 0 is horizontal forward, positive is downward.
     double headYaw;   // The current head yaw, in radians. 0 is forward, positive is left.
