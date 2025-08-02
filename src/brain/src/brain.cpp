@@ -448,6 +448,10 @@ void Brain::detectionsCallback(const vision_interface::msg::Detections &msg)
                  .with_colors(colors)
              // .with_labels(labels)
     );
+
+    // Log current velocity commands as text (not screen overlay)
+    log->log("debug/velocity_commands",
+             rerun::TextLog(format("Vx: %.2f Vy: %.2f Vtheta: %.2f", data->currentVx, data->currentVy, data->currentVtheta)));
 }
 
 void Brain::odometerCallback(const booster_interface::msg::Odometer &msg)
