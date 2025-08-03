@@ -413,6 +413,9 @@ void Brain::detectionsCallback(const vision_interface::msg::Detections &msg)
     for (int i = 0; i < gameObjects.size(); i++)
     {
         auto obj = gameObjects[i];
+        // Skip goalpost detections when logging to Rerun
+        if (obj.label == "Goalpost")
+            continue;
         auto label = obj.label;
         labels.push_back(rerun::Text(format("%s x:%.2f y:%.2f c:%.2f", obj.label.c_str(), obj.posToRobot.x, obj.posToRobot.y, obj.confidence)));
         points.push_back(rerun::Vec2D{obj.posToField.x, -obj.posToField.y});
