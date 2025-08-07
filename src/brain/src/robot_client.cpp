@@ -73,6 +73,11 @@ int RobotClient::setVelocity(double x, double y, double theta, bool applyMinX, b
     y = cap(y, brain->config->vyLimit, -brain->config->vyLimit);
     theta = cap(theta, brain->config->vthetaLimit, -brain->config->vthetaLimit);
 
+    // Store current velocity commands in brain data
+    brain->data->currentVx = x;
+    brain->data->currentVy = y;
+    brain->data->currentVtheta = theta;
+
     brain->log->log("RobotClient/setVelocity_out",
                     rerun::TextLog(format("vx: %.2f  vy: %.2f  vtheta: %.2f", x, y, theta)));
 

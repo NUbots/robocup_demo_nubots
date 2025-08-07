@@ -16,11 +16,11 @@
                   </Sequence>
                   <MoveToPoseOnField _while="decision == 'retreat'" long_range_threshold="100.0" x="-6.0" />
                   <Chase   _while="decision == 'chase'"  vx_limit="1.0"  vy_limit="0.4"  vtheta_limit="1.0"  dist="1.0"/>
-                  <Adjust  _while="decision == 'adjust'"   position="defense" turn_threshold="0.4" max_range="0.6" min_range="0.4" vx_limit="0.2" vy_limit="0.2" vtheta_limit="1.0"  />
+                  <Adjust  _while="decision == 'adjust'"   position="defense" turn_threshold="0.4" max_range="0.6" min_range="0.4" vx_limit="0.6" vy_limit="0.6" vtheta_limit="1.5" speed_factor="1.2"  />
                   <Sequence  _while="decision == 'kick'">
                      <SetVelocity />
                      <Sleep msec="1000" />
-                     <Kick vx_limit="1.2" vy_limit="0.4" min_msec_kick="1000"/>
+                     <Kick vx_limit="1.2" vy_limit="0.4" max_msec_kick="3000" kick_range="0.3"/>
                   </Sequence>
             </Sequence>
          </ReactiveSequence>
