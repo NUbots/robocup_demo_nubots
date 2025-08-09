@@ -58,7 +58,6 @@ RUN sudo rosdep init && rosdep update --rosdistro humble
 
 COPY ./ros_entrypoint.sh /
 
-RUN mkdir -p /home/nubots/ros2_ws/src
 WORKDIR /home/nubots/ros2_ws
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["bash"]

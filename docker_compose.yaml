@@ -1,0 +1,12 @@
+name: ros2_nubots
+
+services:
+  ros2:
+    image: nubots/nubots_ros
+    build: ./docker
+    volumes:
+       - type: bind
+         source: .
+         target: /home/nubots/ros2_ws
+         read_only: false
+    tty: true      
