@@ -10,6 +10,7 @@ services:
          target: /home/nubots/ros2_ws
          read_only: false
     tty: true
+    stdin_open: true
   isaac-sim:
     image: nvcr.io/nvidia/isaac-sim:4.2.0
     runtime: nvidia
