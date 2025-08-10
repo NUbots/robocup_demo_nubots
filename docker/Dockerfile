@@ -29,6 +29,9 @@ RUN pkg_install build-essential \
     python3-rosdep \
     python3-vcstool
 
+RUN pkg_install ros-humble-backward-ros \
+    ros-humble-behaviortree-cpp
+
 # Setup the sudo so it can be run without a password
 COPY etc/sudoers.d/user /etc/sudoers.d/user
 RUN chmod 440 /etc/sudoers.d/user
