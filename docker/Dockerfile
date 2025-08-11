@@ -32,6 +32,28 @@ RUN pkg_install build-essential \
 RUN pkg_install ros-humble-backward-ros \
     ros-humble-behaviortree-cpp
 
+RUN pkg_install unzip \
+    curl
+
+RUN curl --retry 5 -L -o /tmp/rerun_cpp_sdk.zip \
+    https://github.com/rerun-io/rerun/releases/download/0.20.1/rerun_cpp_sdk.zip
+WORKDIR /tmp
+RUN wget -q -c https://developer.download.nvidia.com/compute/cuda/12.2.2/local_installers/cuda_12.2.2_535.104.05_linux.run
+RUN wget -q -c -O /tmp/TensorRT-8.6.1.6.Linux.x86_64-gnu.cuda-12.0.tar.gz \
+    https://developer.nvidia.com/downloads/compute/machine-learning/tensorrt/secure/8.6.1/tars/TensorRT-8.6.1.6.Linux.x86_64-gnu.cuda-12.0.tar.gz
+RUN unzip rerun_cpp_sdk.zip
+RUN sh cuda_12.2.2_535.104.05_linux.run --silent --toolkit
+
+WORKDIR /tmp/rerun_cpp_sdk
+RUN mkdir build && cd build && cmake .. && make && sudo make install
+
+WORKDIR /tmp
+RUN tar -xzf TensorRT-8.6.1.6.Linux.x86_64-gnu.cuda-12.0.tar.gz && sudo mv TensorRT-8.6.1.6 /usr/local
+RUN git clone  https://github.com/BoosterRobotics/booster_robotics_sdk.git && cd booster_robotics_sdk && sudo ./install.sh
+
+RUN pkg_install libgoogle-glog-dev \
+    libopenblas-dev
+
 # Setup the sudo so it can be run without a password
 COPY etc/sudoers.d/user /etc/sudoers.d/user
 RUN chmod 440 /etc/sudoers.d/user
