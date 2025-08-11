@@ -825,7 +825,12 @@ NodeStatus SelfLocate::tick()
     PoseBox2D constraints{xMin, xMax, yMin, yMax, thetaMin, thetaMax};
     double residual;
     auto res = brain->locator->locateRobot(markers, constraints);
-
+    if (res.success)
+    {
+        Pose2D rawPose = res.pose;
+        Pose2D filteredPose = brain->locator->filterState(rawPose);
+        brain->data->robot.posToField = filteredPose;
+    }
     // if (brain->config->rerunLogEnable) {
     if (false)
     {

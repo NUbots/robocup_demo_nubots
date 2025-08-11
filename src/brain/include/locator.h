@@ -206,6 +206,8 @@ public:
 	 * @return double The probability density.
 	 *
 	 */
+	Pose2D filterState(Pose2D pose);
+	Pose2D getCurrentFilteredPose() const;
 	inline double probDesity(double r, double mu, double sigma)
 	{
 		if (sigma < 1e-5)

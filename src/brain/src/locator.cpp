@@ -202,6 +202,35 @@ Pose2D Locator::finalAdjust(vector<FieldMarker> markers_r, Pose2D pose)
     return Pose2D{pose.x + dx, pose.y + dy, pose.theta};
 }
 
+// Take Pose2D from particle filter and feed into linear filter
+Pose2D Locator::filterState(Pose2D pose)
+{
+    double alphaX = 0.5;
+    double alphaY = 0.5;
+    double alphaTheta = 0.4;
+
+    static bool firstMeasurement = true;
+    static double filteredX = 0.0;
+    static double filteredY = 0.0;
+    static double filteredTheta = 0.0;
+
+    if (firstMeasurement) 
+    {
+        filteredX = pose.x;
+        filteredY = pose.y;
+        filteredTheta = pose.theta;
+        firstMeasurement = false;
+    } 
+    else 
+    {
+        // Apply exponential filter: filtered = α × new + (1-α) × old
+        filteredX = alphaX * pose.x + (1.0 - alphaX) * filteredX;
+        filteredY = alphaY * pose.y + (1.0 - alphaY) * filteredY;
+        filteredTheta = alphaTheta * pose.theta + (1.0 - alphaTheta) * filteredTheta;
+    }
+
+    return Pose2D(filteredX, filteredY, filteredTheta);
+}
 int Locator::calcProbs(vector<FieldMarker> markers_r)
 {
     int rows = hypos.rows();
@@ -339,7 +368,7 @@ LocateResult Locator::locateRobot(vector<FieldMarker> markers_r, PoseBox2D const
 
             res.success = true;
             res.code = 0;
-            res.pose = bestPose;
+            res.pose = filterState(bestPose);
             res.pose.theta = toPInPI(res.pose.theta);
             res.msecs = msecsSince(start_time);
             return res;
