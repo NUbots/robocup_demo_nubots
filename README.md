@@ -14,7 +14,19 @@ sudo apt-get install ros-humble-backward-ros
 
 ## Build and Run
 
-### Note    
+### Note on Docker
+
+This repo contains a Dockerfile for setting up ROS2 as well as the repo's dependencies. To use it:
+
+```sh
+# Running ROS2 (add --build to build image before running container)
+docker compose -f 'docker_compose.yaml' run ros2
+
+# Running Isaac Sim (currently won't work due to not having links set up between the two containers)
+docker compose -f 'docker_compose.yaml' run isaac-sim
+```
+
+### Note on Jetpack
 This repo support both jetpack 6.0 and 6.2. If the repo is deployed on jetpack 6.2 machine, please modify src/vision/config/vision.yaml to selelct correct trt model
 
 vision.yaml for jetpack 6.0 machine
