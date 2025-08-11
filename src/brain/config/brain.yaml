@@ -3,7 +3,7 @@ brain_node:
     game:
       team_id: 29 # consistant with GameControl
       player_id: 0 # 0 | 1 | 2 | 3
-      field_type: "adult_size" # adult_size | kid_size 
+      field_type: "roboleague" # adult_size | kid_size | roboleague 
       player_role: "striker" # striker | goal_keeper
       player_start_pos: "left" # right | left
       
@@ -16,6 +16,6 @@ brain_node:
     enable_com: true
 
     rerunLog:
-      enable: false
-      server_addr: "127.0.0.1:9876"
+      enable: true
+      server_addr: "192.168.54.148:9876"
       img_interval: 1
