@@ -12,6 +12,7 @@ RUN echo 'Etc/UTC' > /etc/timezone && \
 # install packages and deps
 RUN apt update && apt upgrade -y
 
+# get ros2 repositories for apt
 RUN pkg_install software-properties-common \
     wget
 RUN add-apt-repository universe && apt update
@@ -19,6 +20,7 @@ RUN wget -O /tmp/ros2-apt-source.deb "https://github.com/ros-infrastructure/ros-
 RUN dpkg -i /tmp/ros2-apt-source.deb
 RUN apt update && apt upgrade -y
 
+# install ros2 and ros2 deps
 RUN pkg_install ros-humble-desktop \
     ros-dev-tools
 
@@ -32,6 +34,7 @@ RUN pkg_install build-essential \
 RUN pkg_install ros-humble-backward-ros \
     ros-humble-behaviortree-cpp
 
+# install unzip and curl to get code deps
 RUN pkg_install unzip \
     curl
 
@@ -44,6 +47,7 @@ RUN wget -q -c -O /tmp/TensorRT-8.6.1.6.Linux.x86_64-gnu.cuda-12.0.tar.gz \
 RUN unzip rerun_cpp_sdk.zip
 RUN sh cuda_12.2.2_535.104.05_linux.run --silent --toolkit
 
+# install rerun_sdk
 WORKDIR /tmp/rerun_cpp_sdk
 RUN mkdir build && cd build && cmake .. && make && sudo make install
 
@@ -54,6 +58,8 @@ RUN git clone  https://github.com/BoosterRobotics/booster_robotics_sdk.git && cd
 RUN pkg_install libgoogle-glog-dev \
     libopenblas-dev
 
+# yoinked from robot; required to compile
+COPY booster_internal /usr/local/include/booster_internal
 # Setup the sudo so it can be run without a password
 COPY etc/sudoers.d/user /etc/sudoers.d/user
 RUN chmod 440 /etc/sudoers.d/user
@@ -79,6 +85,7 @@ USER nubots
 # Without this git gets very angry and confused about the state of the user
 RUN git config --global --add safe.directory '*'
 
+# init ros2
 RUN sudo rosdep init && rosdep update --rosdistro humble
 
 COPY ./ros_entrypoint.sh /
