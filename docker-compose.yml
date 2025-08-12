@@ -58,3 +58,4 @@ services:
           target: /root/Documents
     tty: true
     stdin_open: true
+    command: sleep infinity
