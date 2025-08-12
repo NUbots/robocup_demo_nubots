@@ -20,6 +20,7 @@ find_package(vision_interface REQUIRED)
 find_package(OpenCV 4.5 REQUIRED)
 find_package(YAML-CPP REQUIRED)
 find_package(PCL REQUIRED)
+find_package(CURL REQUIRED)
 
 # rosidl_generate_interfaces(${PROJECT_NAME}
 #   "msg/DetectedObject.msg"

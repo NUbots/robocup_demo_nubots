@@ -18,6 +18,7 @@ target_link_libraries(vision_node ${BOOSTER_ROBOTICS_SDK_DEPENDENCIES}
                                      booster_vision_pose_estimator
                                      yolov8_model
                                      ${typesupport_target}
+                                     CURL::libcurl
                                      )
 
 ament_target_dependencies(vision_node

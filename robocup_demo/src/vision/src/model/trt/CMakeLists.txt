@@ -1,7 +1,14 @@
 # add_definitions(-DAPI_EXPORTS)
 
+cmake_policy(SET CMP0104 NEW)
 set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc)
 enable_language(CUDA)
+
+# If user didn't specify architectures, pick a reasonable default set.
+if (NOT CMAKE_CUDA_ARCHITECTURES OR CMAKE_CUDA_ARCHITECTURES STREQUAL "")
+        # Adjust this list to match your deployment GPUs (e.g. 87 for Orin, 86 Ampere, 75 Turing, 72 Xavier).
+        set(CMAKE_CUDA_ARCHITECTURES 75;86)
+endif()
 
 set(SRCS block.cpp
          calibrator.cpp

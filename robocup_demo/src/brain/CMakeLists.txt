@@ -25,6 +25,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(CURL REQUIRED)
 
 
 # uncomment the following section in order to fill in
@@ -51,7 +52,7 @@ target_link_libraries(brain_node ${typesupport_target})
 
 set_property(TARGET brain_node PROPERTY CXX_STANDARD 17)
 
-target_link_libraries(brain_node rerun_sdk ${OpenCV_LIBS} yaml-cpp) 
+target_link_libraries(brain_node rerun_sdk ${OpenCV_LIBS} yaml-cpp CURL::libcurl) 
 target_link_libraries(brain_node ${backward_ros_LIBRARIES})
 include_directories(${geometry_msgs_INCLUDE_DIRS})
 include_directories(${std_msgs_INCLUDE_DIRS})
@@ -64,8 +65,13 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing -Wno-unused-parameter -Wn
 
 ament_target_dependencies(brain_node rclcpp rosidl_typesupport_cpp std_msgs sensor_msgs behaviortree_cpp booster_interface vision_interface game_controller_interface booster_msgs tf2 tf2_ros tf2_geometry_msgs)
 
+set(BOOSTER_INTERNAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../booster_internal)
+if(NOT EXISTS "${BOOSTER_INTERNAL_DIR}/robot/b1/b1_loco_internal_api.hpp")
+  message(WARNING "b1_loco_internal_api.hpp not found at ${BOOSTER_INTERNAL_DIR}/robot/b1. Adding parent anyway; adjust BOOSTER_INTERNAL_DIR if SDK is elsewhere.")
+endif()
 target_include_directories(brain_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${BOOSTER_INTERNAL_DIR}>
   $<INSTALL_INTERFACE:include>)
 target_compile_features(brain_node PUBLIC c_std_99 cxx_std_17) # Require C99 and C++17
 install(TARGETS

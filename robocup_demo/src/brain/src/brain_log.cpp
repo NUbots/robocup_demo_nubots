@@ -10,7 +10,7 @@ BrainLog::BrainLog(Brain *argBrain) : brain(argBrain), log_tcp("robocup"), log_f
     enable_log_file = brain->config->rerunLogEnableFile;
     if (enable_log_tcp)
     {
-        rerun::Error err = log_tcp.connect(brain->config->rerunLogServerIP);
+        rerun::Error err = log_tcp.connect_tcp(brain->config->rerunLogServerIP);
         if (err.is_err()) prtErr("Connect rerunLog server failed: " + err.description);
     }
     

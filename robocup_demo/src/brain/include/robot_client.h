@@ -4,10 +4,20 @@
 #include <string>
 #include <rerun.hpp>
 
+// Print current sys path (header-only inline to avoid multiple definitions)
+inline void printSysPath() {
+    static bool printed = false;
+    if (!printed) {
+        std::cout << "Current sys path: (stub)" << std::endl;
+        printed = true; // only once to reduce noise
+    }
+}
+
 #include "booster_interface/srv/rpc_service.hpp"
 #include "booster_interface/msg/booster_api_req_msg.hpp"
 #include "booster_msgs/msg/rpc_req_msg.hpp"
-#include "booster_internal/robot/b1/b1_loco_internal_api.hpp"
+#include "/home/xbot/Workspace/robocup_demo_nubots/robocup_demo/src/booster_internal/robot/b1/b1_loco_internal_api.hpp"
+
 
 using namespace std;
 

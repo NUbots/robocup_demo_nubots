@@ -32,7 +32,7 @@ void Locator::init(FieldDimensions fd, int minMarkerCntParam, double residualTol
     enableLog = enableLogParam;
     logIP = logIPParam;
     if (enableLog) {
-        auto connectError = log.connect(logIP);
+        auto connectError = log.connect_tcp(logIP);
         if (connectError.is_err()) prtErr(format("Rerun log connect Error: %s", connectError.description.c_str()));
         auto saveError = log.save("/home/booster/log.rrd");
         if (saveError.is_err()) prtErr(format("Rerun log save Error: %s", saveError.description.c_str()));
