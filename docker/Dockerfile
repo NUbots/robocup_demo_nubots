@@ -89,8 +89,14 @@ RUN git config --global --add safe.directory '*'
 # init ros2
 RUN sudo rosdep init && rosdep update --rosdistro humble
 
-COPY ./ros_entrypoint.sh /
+# COPY ./ros_entrypoint.sh /
+
+RUN echo 'source /opt/ros/humble/setup.bash' >> ~/.bashrc 
+RUN echo 'export LD_LIBRARY_PATH=/usr/local/cuda/lib64:$LD_LIBRARY_PATH' >> ~/.bashrc
+RUN echo 'export PATH=/usr/local/cuda/bin:$PATH' >> ~/.bashrc
+RUN echo 'export LD_LIBRARY_PATH=/usr/local/TensorRT-8.6.1.6/lib:$LD_LIBRARY_PATH' >> ~/.bashrc
+RUN echo 'export PATH=/usr/local/TensorRT-8.6.1.6//bin:$PATH' >> ~/.bashrc
 
 WORKDIR /home/nubots/ros2_ws
-ENTRYPOINT ["/ros_entrypoint.sh"]
+# ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["bash"]

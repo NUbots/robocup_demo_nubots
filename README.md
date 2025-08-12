@@ -19,11 +19,11 @@ sudo apt-get install ros-humble-backward-ros
 This repo contains a Dockerfile for setting up ROS2 as well as the repo's dependencies. To use it:
 
 ```sh
-# Running ROS2 (add --build to build image before running container)
-docker compose -f 'docker_compose.yaml' run ros2
+# Running ROS2 (add --build to build image instead of pulling it)
+docker compose run ros2
 
-# Running Isaac Sim (currently won't work due to not having links set up between the two containers)
-docker compose -f 'docker_compose.yaml' run isaac-sim
+# Run in another terminal to access container
+docker compose exec -it ros2 bash
 ```
 
 Also, note that you will need to download the Booster Runner and Isaac Sim binaries from the [Booster wiki](https://booster.feishu.cn/wiki/XY6Kwrq1bizif4kq7X9c14twnle) page and copy them into the repo; don't worry about where in the repo it should be, since the repo folder gets mounted by Docker into the container.
