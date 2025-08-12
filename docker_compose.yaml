@@ -4,7 +4,12 @@ services:
   ros2:
     image: nubots/nubots_ros2_booster
     build: ./docker
-    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - count: all
+              capabilities: [gpu]
     gpus: all
     environment:
       - NVIDIA_DRIVER_CAPABILITIES=compute,graphics,utility,display
