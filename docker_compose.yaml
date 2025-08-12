@@ -2,17 +2,8 @@ name: ros2_nubots
 
 services:
   ros2:
-    image: nubots/nubots_ros
+    image: nubots/nubots_ros2_booster
     build: ./docker
-    volumes:
-       - type: bind
-         source: .
-         target: /home/nubots/ros2_ws
-         read_only: false
-    tty: true
-    stdin_open: true
-  isaac-sim:
-    image: nvcr.io/nvidia/isaac-sim:4.2.0
     runtime: nvidia
     gpus: all
     environment:
@@ -24,36 +15,42 @@ services:
       - ACCEPT_EULA=Y
       - PRIVACY_CONSENT=Y
     volumes:
-      - type: bind
-        source: /tmp/.X11-unix
-        target: /tmp/.X11-unix
-      - type: bind
-        source: ${XDG_RUNTIME_DIR}
-        target: ${XDG_RUNTIME_DIR}
-      - type: bind
-        source: ${HOME}/docker/isaac-sim/cache/ov
-        target: /root/.cache/ov
-      - type: bind
-        source: ${HOME}/docker/isaac-sim/cache/pip
-        target: /root/.cache/pip
-      - type: bind
-        source: ${HOME}/docker/isaac-sim/cache/glcache
-        target: /root/.cache/glcache
-      - type: bind
-        source: ${HOME}/docker/isaac-sim/cache/computecache
-        target: /root/.cache/computecache
-      - type: bind
-        source: ${HOME}/docker/isaac-sim/cache/asset-browser
-        target: /isaac-sim/exts/isaacsim.asset.browser/cache
-      - type: bind
-        source: ${HOME}/docker/isaac-sim/logs
-        target: /root/.nvidia-omniverse/logs
-      - type: bind
-        source: ${HOME}/docker/isaac-sim/data
-        target: /root/.local/share/ov/data
-      - type: bind
-        source: ${HOME}/docker/isaac-sim/pkg
-        target: /root/.local/share/ov/pkg
-      - type: bind
-        source: ${HOME}/docker/isaac-sim/documents
-        target: /root/Documents
+        - type: bind
+          source: .
+          target: /home/nubots/ros2_ws
+          read_only: false
+        - type: bind
+          source: /tmp/.X11-unix
+          target: /tmp/.X11-unix
+        - type: bind
+          source: ${XDG_RUNTIME_DIR}
+          target: ${XDG_RUNTIME_DIR}
+        - type: bind
+          source: ${HOME}/docker/isaac-sim/cache/ov
+          target: /root/.cache/ov
+        - type: bind
+          source: ${HOME}/docker/isaac-sim/cache/pip
+          target: /root/.cache/pip
+        - type: bind
+          source: ${HOME}/docker/isaac-sim/cache/glcache
+          target: /root/.cache/glcache
+        - type: bind
+          source: ${HOME}/docker/isaac-sim/cache/computecache
+          target: /root/.cache/computecache
+        - type: bind
+          source: ${HOME}/docker/isaac-sim/cache/asset-browser
+          target: /isaac-sim/exts/isaacsim.asset.browser/cache
+        - type: bind
+          source: ${HOME}/docker/isaac-sim/logs
+          target: /root/.nvidia-omniverse/logs
+        - type: bind
+          source: ${HOME}/docker/isaac-sim/data
+          target: /root/.local/share/ov/data
+        - type: bind
+          source: ${HOME}/docker/isaac-sim/pkg
+          target: /root/.local/share/ov/pkg
+        - type: bind
+          source: ${HOME}/docker/isaac-sim/documents
+          target: /root/Documents
+    tty: true
+    stdin_open: true

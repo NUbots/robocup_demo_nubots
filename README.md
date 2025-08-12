@@ -26,6 +26,8 @@ docker compose -f 'docker_compose.yaml' run ros2
 docker compose -f 'docker_compose.yaml' run isaac-sim
 ```
 
+Also, note that you will need to download the Booster Runner and Isaac Sim binaries from the [Booster wiki](https://booster.feishu.cn/wiki/XY6Kwrq1bizif4kq7X9c14twnle) page and copy them into the repo; don't worry about where in the repo it should be, since the repo folder gets mounted by Docker into the container.
+
 ### Note on Jetpack
 This repo support both jetpack 6.0 and 6.2. If the repo is deployed on jetpack 6.2 machine, please modify src/vision/config/vision.yaml to selelct correct trt model
 
@@ -44,6 +46,8 @@ detection_model:
 
 To decide jetpack version, please execute `dpkg -l | grep jetpack` on host.
 
+## Scripts
+```sh
 # Build the programs
 ./scripts/build.sh
 
@@ -54,11 +58,10 @@ To decide jetpack version, please execute `dpkg -l | grep jetpack` on host.
 ./scripts/start.sh
 ```
 
-## Documents
+# Documents
 [Chinese Version](https://booster.feishu.cn/wiki/P5kJw6nDGib5wskZ3Yfc289lnIg)
 
 [English Version](https://booster.feishu.cn/wiki/XY6Kwrq1bizif4kq7X9c14twnle)
-```
 
 
 # Simulation Installation for NUbots Team

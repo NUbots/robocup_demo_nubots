@@ -59,7 +59,8 @@ RUN pkg_install libgoogle-glog-dev \
     libopenblas-dev
 
 # yoinked from robot; required to compile
-COPY booster_internal /usr/local/include/booster_internal
+COPY usr/local/include/booster_internal /usr/local/include/booster_internal
+
 # Setup the sudo so it can be run without a password
 COPY etc/sudoers.d/user /etc/sudoers.d/user
 RUN chmod 440 /etc/sudoers.d/user
