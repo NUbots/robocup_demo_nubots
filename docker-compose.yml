@@ -4,12 +4,10 @@ services:
   ros2:
     image: nubots/nubots_ros2_booster
     build: ./docker
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - count: all
-              capabilities: [gpu]
+    runtime: nvidia
+    gpus: all
+    network_mode: host
+    shm_size: 8g
     environment:
       - NVIDIA_DRIVER_CAPABILITIES=compute,graphics,utility,display
       - DISPLAY=${DISPLAY}
@@ -18,6 +16,8 @@ services:
       - QT_X11_NO_MITSHM=1
       - ACCEPT_EULA=Y
       - PRIVACY_CONSENT=Y
+      - HOME=/home/nubots
+      - USER=nubots
     volumes:
         - type: bind
           source: .
@@ -29,33 +29,35 @@ services:
         - type: bind
           source: ${XDG_RUNTIME_DIR}
           target: ${XDG_RUNTIME_DIR}
+          read_only: false
         - type: bind
-          source: ${HOME}/docker/isaac-sim/cache/ov
-          target: /root/.cache/ov
+          source: /home/zeonyph/.local/share/ov/pkg
+          target: /home/nubots/.local/share/ov/pkg
+          read_only: false
         - type: bind
-          source: ${HOME}/docker/isaac-sim/cache/pip
-          target: /root/.cache/pip
+          source: /home/zeonyph/.cache/ov
+          target: /home/nubots/.cache/ov
+          read_only: false
         - type: bind
-          source: ${HOME}/docker/isaac-sim/cache/glcache
-          target: /root/.cache/glcache
+          source: /home/zeonyph/.cache/pip
+          target: /home/nubots/.cache/pip
+          read_only: false
         - type: bind
-          source: ${HOME}/docker/isaac-sim/cache/computecache
-          target: /root/.cache/computecache
+          source: /home/zeonyph/.cache/nvidia/GLCache
+          target: /home/nubots/.cache/nvidia/GLCache
+          read_only: false
         - type: bind
-          source: ${HOME}/docker/isaac-sim/cache/asset-browser
-          target: /isaac-sim/exts/isaacsim.asset.browser/cache
+          source: /home/zeonyph/.nv/ComputeCache
+          target: /home/nubots/.nv/ComputeCache
+          read_only: false
         - type: bind
-          source: ${HOME}/docker/isaac-sim/logs
-          target: /root/.nvidia-omniverse/logs
+          source: /home/zeonyph/.local/share/ov/data
+          target: /home/nubots/.local/share/ov/data
+          read_only: false
         - type: bind
-          source: ${HOME}/docker/isaac-sim/data
-          target: /root/.local/share/ov/data
-        - type: bind
-          source: ${HOME}/docker/isaac-sim/pkg
-          target: /root/.local/share/ov/pkg
-        - type: bind
-          source: ${HOME}/docker/isaac-sim/documents
-          target: /root/Documents
+          source: /home/zeonyph/Documents
+          target: /home/nubots/Documents
+          read_only: false
     tty: true
     stdin_open: true
-    command: sleep infinity
+    command: bash -c 'echo -e "Container running, access via another terminal by using \033[32;1;4mdocker compose exec -it ros2 bash\033[0m" && sleep infinity'

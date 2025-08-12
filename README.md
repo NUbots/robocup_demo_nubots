@@ -26,7 +26,7 @@ docker compose run ros2
 docker compose exec -it ros2 bash
 ```
 
-Also, note that you will need to download the Booster Runner and Isaac Sim binaries from the [Booster wiki](https://booster.feishu.cn/wiki/XY6Kwrq1bizif4kq7X9c14twnle) page and copy them into the repo; don't worry about where in the repo it should be, since the repo folder gets mounted by Docker into the container.
+Also, note that you will need to download the Booster Runner and Isaac Sim binaries from the [Booster wiki](https://booster.feishu.cn/wiki/XY6Kwrq1bizif4kq7X9c14twnle) page and copy them into the repo; don't worry about where in the repo it should be, since the repo folder gets mounted by Docker into the container. You'll also have to download Isaac Sim [here](https://download.isaacsim.omniverse.nvidia.com/isaac-sim-standalone%404.2.0-rc.18%2Brelease.16044.3b2ed111.gl.linux-x86_64.release.zip) and extract it so that the files in the .zip file can be accessed in `~/.local/share/ov/pkg/isaac-sim-4.2.0`.
 
 ### Note on Jetpack
 This repo support both jetpack 6.0 and 6.2. If the repo is deployed on jetpack 6.2 machine, please modify src/vision/config/vision.yaml to selelct correct trt model
@@ -68,6 +68,9 @@ To decide jetpack version, please execute `dpkg -l | grep jetpack` on host.
 The easiest way to install the simulation environment is to use the official NUbots documentation guided software version. Due to Intel RealSense only support to linux kernel 6.8 so please make sure your kernel version is 6.8 or lower. If you are using a newer kernel, please downgrade it to 6.8.
 
 ## Basic Requirements
+
+### Dependencies
+
 1. Ubuntu 22.04
 2. Nvidia GPU with driver version 535
 3. Cuda 12.2
