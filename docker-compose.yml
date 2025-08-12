@@ -10,7 +10,6 @@ services:
           devices:
             - count: all
               capabilities: [gpu]
-    gpus: all
     environment:
       - NVIDIA_DRIVER_CAPABILITIES=compute,graphics,utility,display
       - DISPLAY=${DISPLAY}
