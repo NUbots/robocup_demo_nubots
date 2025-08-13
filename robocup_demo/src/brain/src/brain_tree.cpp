@@ -684,7 +684,7 @@ NodeStatus Assist::tick() {
     Pose2D targetPose;
     targetPose.x = isSecondary ? ballPos.x - 4.0 : ballPos.x - 2.0;
     if (amFurthestBackAssist){
-        targetPose.x - 3.0 // drop back for defense, the code right now has no defender only strikers.
+        targetPose.x = targetPose.x - 3.0; // drop back for defense, the code right now has no defender only strikers.
     }
     targetPose.x = max(targetPose.x, - fd.length / 2.0 + distToGoalline); 
     targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) / (ballPos.x + fd.length / 2.0); 
