@@ -270,5 +270,12 @@ cd ~/Workspace/booster/robocup_demo
 # You can check their running status via brain.log, vision.log, game_controller.log, joystick.log.
 # If you want to stop them, just run ./scripts/sim_stop.sh
 ```
+# Groot visualisation
+```bash
+# Download from the official website https://www.behaviortree.dev/groot/
+# make it executable 
+chmod +x ~/Downloads/Groot2-v1.6.1-x86_64.AppImage
+# Default port is 1667
+```
 
 ## Basic Official Documents to start robot in the simulation environment

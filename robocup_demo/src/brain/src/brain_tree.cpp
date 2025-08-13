@@ -8,9 +8,14 @@
 #include "utils/misc.h"
 #include "locator.h"
 #include "std_msgs/msg/string.hpp"
+#include <behaviortree_cpp/behavior_tree.h>
+#include <behaviortree_cpp/bt_factory.h>
+#include <behaviortree_cpp/xml_parsing.h>
+
 #include <fstream>
 #include <ios>
 
+using namespace BT;
 /**
  * 这里使用宏定义来缩减 RegisterBuilder 的代码量
  * REGISTER_BUILDER(Test) 展开后的效果是
@@ -73,6 +78,10 @@ void BrainTree::init()
 
     factory.registerBehaviorTreeFromFile(brain->config->treeFilePath);
     tree = factory.createTree("MainTree");
+
+    // Groot2 integration (BT.CPP v4+) to publish the behavior tree
+    std::string xml_models = BT::writeTreeNodesModelXML(factory);
+    groot2_publisher = std::make_unique<BT::Groot2Publisher>(tree);
 
     // 构造完成后，初始化 blackboard entry
     initEntry();

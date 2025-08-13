@@ -3,6 +3,7 @@
 #include <tuple>
 #include <behaviortree_cpp/behavior_tree.h>
 #include <behaviortree_cpp/bt_factory.h>
+#include <behaviortree_cpp/loggers/groot2_publisher.h>
 #include <algorithm>
 
 #include "types.h"
@@ -40,6 +41,7 @@ public:
 private:
     Tree tree;
     Brain *brain;
+    std::unique_ptr<BT::Groot2Publisher> groot2_publisher; 
 
     /**
      * 初始化 blackboard 里的 entry，注意新加字段，在这里设置个默认值
