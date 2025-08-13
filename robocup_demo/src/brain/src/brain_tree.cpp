@@ -666,8 +666,7 @@ NodeStatus Assist::tick() {
         if (tmStatus.role != "striker") continue; 
         
 
-        float teammateDistToBall = distance(tmStatus.robotPoseToField, ballPose);
-        if (tmStatus.robotPoseToField.x < minX) { {
+        if (tmStatus.robotPoseToField.x < minX) {
             amFurthestBackAssist = false;
         }
 
