@@ -655,6 +655,7 @@ NodeStatus Assist::tick() {
 
     bool isSecondary = false; 
     bool has2Assists = false;
+    bool amFurthestBackAssist = true;
     int selfIdx = brain->config->playerId - 1;
     for (int i = 0; i < HL_MAX_NUM_PLAYERS; i++) {
         if (i == selfIdx) continue; 
@@ -663,6 +664,12 @@ NodeStatus Assist::tick() {
         if (!tmStatus.isAlive) continue; 
         if (tmStatus.isLead) continue; 
         if (tmStatus.role != "striker") continue; 
+        
+
+        float teammateDistToBall = distance(tmStatus.robotPoseToField, ballPose);
+        if (tmStatus.robotPoseToField.x < minX) { {
+            amFurthestBackAssist = false;
+        }
 
         has2Assists = true;
         log("2 assists found");
@@ -676,6 +683,9 @@ NodeStatus Assist::tick() {
 
     Pose2D targetPose;
     targetPose.x = isSecondary ? ballPos.x - 4.0 : ballPos.x - 2.0;
+    if (amFurthestBackAssist){
+        targetPose.x - 3.0 // drop back for defense, the code right now has no defender only strikers.
+    }
     targetPose.x = max(targetPose.x, - fd.length / 2.0 + distToGoalline); 
     targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) / (ballPos.x + fd.length / 2.0); 
     if (has2Assists) { 
