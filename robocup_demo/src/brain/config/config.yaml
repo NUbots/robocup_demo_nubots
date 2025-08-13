@@ -3,7 +3,7 @@ brain_node:
     game:
       team_id: 29 # must be consistant with GameControl
       player_id: 1 # 1 | 2 | 3 | 4 | 5
-      field_type: "adult_size" # adult_size | kid_size | robo_league
+      field_type: "robo_league" # adult_size | kid_size | robo_league
       player_role: "striker" # striker | goal_keeper
       treat_person_as_robot: false 
       number_of_players: 3
@@ -60,12 +60,12 @@ brain_node:
     enable_com: false 
 
     rerunLog:
-      enable_tcp: false 
-      server_ip: "127.0.0.1:9876" 
+      enable_tcp: true 
+      server_ip: "192.168.10.10:9876" 
       enable_file: false 
       log_dir: "/home/booster/Workspace/rrlog"
       max_log_file_mins: 5.0 
-      img_interval: 1 
+      img_interval: 10
     
     recovery:
       retry_max_count: 2
