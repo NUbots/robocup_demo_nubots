@@ -666,7 +666,7 @@ NodeStatus Assist::tick() {
         if (tmStatus.role != "striker") continue; 
         
 
-        if (tmStatus.robotPoseToField.x < minX) {
+        if (tmStatus.robotPoseToField.x < robotPose.x) {
             amFurthestBackAssist = false;
         }
 
