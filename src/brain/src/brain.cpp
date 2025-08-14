@@ -2832,6 +2832,22 @@ double Brain::calcAvoidDir(double startAngle, double safeDist) {
     return toPInPI(determinedAngle);
 }
 
+Brain::WorldSnapshot Brain::getWorld() {
+    WorldSnapshot ws;
+    // 分类后的机器人集合
+    ws.allies = data->getAllyRobots();
+    ws.opponents = data->getOpponentRobots();
+    // 球信息
+    ws.ball = data->ball;
+    ws.tmBall = data->tmBall;
+    // 可靠性标志（来自行为树条目和已有标志）
+    bool selfKnown = data->ballDetected && tree->getEntry<bool>("ball_location_known");
+    bool tmKnown = tree->getEntry<bool>("tm_ball_pos_reliable");
+    ws.ballKnown = selfKnown;
+    ws.tmBallKnown = tmKnown;
+    return ws;
+}
+
 void Brain::updateLogFile() {
     if (config->rerunLogEnableFile && msecsSince(data->timeLastLogSave) > config->rerunLogMaxFileMins * 60000)
         log->updateLogFilePath();

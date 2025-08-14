@@ -176,6 +176,17 @@ public:
 
     double calcAvoidDir(double startAngle, double safeDist);
 
+    // 快速获取当前世界快照（己方/对方/球）
+    struct WorldSnapshot {
+        vector<GameObject> allies;
+        vector<GameObject> opponents;
+        GameObject ball;            // 自身检测到的球
+        GameObject tmBall;          // 队友共享球
+        bool ballKnown = false;     // 自身球是否可靠
+        bool tmBallKnown = false;   // 队友球是否可靠
+    };
+    WorldSnapshot getWorld();
+
 
 private:
     void loadConfig();
