@@ -740,7 +740,9 @@ NodeStatus Adjust::tick()
     }
 
     bool alignMode;
+    bool estExtremumCalcitrant;
     getInput("align_mode", alignMode);
+    getInput("is_penalty_shootout", estExtremumCalcitrant);
     
     // Simple align mode for goalies - just align horizontally with the ball
     if (alignMode) {
@@ -762,6 +764,14 @@ NodeStatus Adjust::tick()
         
         // No forward/backward movement (vx = 0) - goalie stays at goal line
         double vx = 0.0;
+
+        if (estExtremumCalcitrant) {
+            vtheta = 0.0; // No rotation if in penalty shootout mode
+            // If the absVal of robot's current Y is greater than 2.7/2, cap vy to 0.0
+            if (fabs(ballY) > (2.7 / 2.0) - 0.7) {
+                vy = 0.0;
+            } 
+        }
         
         log(format("ALIGN MODE - ballY: %.2f, vy: %.2f, ballYaw: %.2f, vtheta: %.2f", ballY, vy, ballYaw, vtheta));
         
