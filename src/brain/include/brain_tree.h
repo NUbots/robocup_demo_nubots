@@ -306,6 +306,7 @@ public:
             InputPort<double>("kick_range", 0.3, "Range threshold to reduce velocity for precision"),
             InputPort<double>("vx_limit", 1.2, "vx limit"),
             InputPort<double>("vy_limit", 0.4, "vy limit"),
+            InputPort<double>("ball_y_offset", 0.0, "Y offset to apply to ball position for kick targeting"),
         };
     }
 

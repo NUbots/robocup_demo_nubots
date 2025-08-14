@@ -15,7 +15,7 @@
                 <Speak text="manual" />
                 <SimpleChase _while="assist_chase" vx_limit="1.5" vy_limit="0.1" stop_dist="0.0" stop_angle="0.3" />
                 <Sequence _while="assist_kick">
-                    <Kick vx_limit="1.2" vy_limit="0.4" max_msec_kick="3000" kick_range="0.3"/>
+                    <Kick vx_limit="1.2" vy_limit="0.4" max_msec_kick="3000" kick_range="0.3" ball_y_offset="-0.2"/>
                </Sequence>
             </ReactiveSequence>
 
