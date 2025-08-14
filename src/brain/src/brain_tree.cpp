@@ -1057,9 +1057,9 @@ NodeStatus Kick::onRunning()
     double tx = brain->data->ball.posToRobot.x;
     double ty = brain->data->ball.posToRobot.y + ballYOffset;
     double theta = brain->data->ball.yawToRobot;
-    double xGain = 0.9;
-    double yGain = 0.9;
-    double thetaGain = 1.0;
+    double xGain = 0.75;
+    double yGain = 0.75;
+    double thetaGain = 1.75;
     double vx = tx * xGain;
     double vy = ty * yGain;
     double vtheta = theta * thetaGain;

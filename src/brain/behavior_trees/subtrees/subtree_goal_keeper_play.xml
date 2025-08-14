@@ -29,7 +29,7 @@
                      <GoToGoalBlockingPosition _while="decision == 'retreat'" theta_tolerance="0.6" />
                      <Chase   _while="decision == 'chase'"  vx_limit="0.8"  vy_limit="0.3"  vtheta_limit="1.0"  dist="0.5" safe_dist="0.5" />
                      <Adjust _while="decision =='adjust'" turn_threshold="0.8" range="0.2" vx_limit="0.8" vy_limit="0.6" vtheta_limit="1.0" vtheta_factor="4.5" tangential_speed_far="0.9" tangential_speed_near="0.3" />
-                     <Kick _while="decision == 'kick'" max_msec_kick="3000" kick_range="0.3" ball_y_offset="-0.2"/>
+                     <Kick _while="decision == 'kick'" max_msec_kick="3000" kick_range="0.3" ball_y_offset="-0.15"/>
                   </Sequence>
                </Sequence>
             </ReactiveSequence>
