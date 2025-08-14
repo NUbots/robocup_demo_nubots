@@ -739,68 +739,99 @@ NodeStatus Adjust::tick()
         return NodeStatus::SUCCESS;
     }
 
-    double turnThreshold, vxLimit, vyLimit, vthetaLimit, range, st_far, st_near, vtheta_factor, NEAR_THRESHOLD;
-    getInput("near_threshold", NEAR_THRESHOLD);
-    getInput("tangential_speed_far", st_far);
-    getInput("tangential_speed_near", st_near);
-    getInput("vtheta_factor", vtheta_factor);
-    getInput("turn_threshold", turnThreshold);
-    getInput("vx_limit", vxLimit);
-    getInput("vy_limit", vyLimit);
-    getInput("vtheta_limit", vthetaLimit);
-    getInput("range", range);
-    log(format("ballX: %.1f ballY: %.1f ballYaw: %.1f", brain->data->ball.posToRobot.x, brain->data->ball.posToRobot.y, brain->data->ball.yawToRobot));
-    double NO_TURN_THRESHOLD, TURN_FIRST_THRESHOLD;
-    getInput("no_turn_threshold", NO_TURN_THRESHOLD);
-    getInput("turn_first_threshold", TURN_FIRST_THRESHOLD);
-
-
-    double vx = 0, vy = 0, vtheta = 0;
-    double kickDir = brain->data->kickDir;
-    double dir_rb_f = brain->data->robotBallAngleToField; 
-    double deltaDir = toPInPI(kickDir - dir_rb_f);
-    double ballRange = brain->data->ball.range;
-    double ballYaw = brain->data->ball.yawToRobot;
-    // double st = cap(fabs(deltaDir), st_far, st_near);
-    double st = st_far; 
-    double R = ballRange; 
-    double r = range;
-    double sr = cap(R - r, 0.5, 0); 
-    log(format("R: %.2f, r: %.2f, sr: %.2f", R, r, sr));
-
-    log(format("deltaDir = %.1f", deltaDir));
-    if (fabs(deltaDir) * R < NEAR_THRESHOLD) {
-        log("use near speed");
-        st = st_near;
-        // sr = 0.;
-        // vxLimit = 0.1;
-    }
-
-    double theta_robot_f = brain->data->robotPoseToField.theta; 
-    double thetat_r = dir_rb_f + M_PI / 2 * (deltaDir > 0 ? -1.0 : 1.0) - theta_robot_f; 
-    double thetar_r = dir_rb_f - theta_robot_f; 
-
-    vx = st * cos(thetat_r) + sr * cos(thetar_r); 
-    vy = st * sin(thetat_r) + sr * sin(thetar_r); 
-    // vtheta = toPInPI(ballYaw + st / R * (deltaDir > 0 ? 1.0 : -1.0)); 
-    vtheta = ballYaw;
-    vtheta *= vtheta_factor; 
-
-    if (fabs(ballYaw) < NO_TURN_THRESHOLD) vtheta = 0.; 
-    if (
-        fabs(ballYaw) > TURN_FIRST_THRESHOLD 
-        && fabs(deltaDir) < M_PI / 4
-    ) { 
-        vx = 0;
-        vy = 0;
-    }
-
-    vx = cap(vx, vxLimit, -0.);
-    vy = cap(vy, vyLimit, -vyLimit);
-    vtheta = cap(vtheta, vthetaLimit, -vthetaLimit);
+    bool alignMode;
+    getInput("align_mode", alignMode);
     
-    log(format("vx: %.1f vy: %.1f vtheta: %.1f", vx, vy, vtheta));
-    brain->client->setVelocity(vx, vy, vtheta);
+    // Simple align mode for goalies - just align horizontally with the ball
+    if (alignMode) {
+        double vyLimit, vthetaLimit;
+        getInput("vy_limit", vyLimit);
+        getInput("vtheta_limit", vthetaLimit);
+
+        // Get ball position relative to robot
+        double ballY = brain->data->ball.posToRobot.y;
+        double ballYaw = brain->data->ball.yawToRobot;
+        
+        // Simple lateral movement to align with ball's x-coordinate
+        double vy = ballY * 0.5; // Proportional control for lateral movement
+        double vtheta = ballYaw * 2.0; // Proportional control for rotation
+        
+        // Limit speeds
+        vy = cap(vy, vyLimit, -vyLimit);
+        vtheta = cap(vtheta, vthetaLimit, -vthetaLimit);
+        
+        // No forward/backward movement (vx = 0) - goalie stays at goal line
+        double vx = 0.0;
+        
+        log(format("ALIGN MODE - ballY: %.2f, vy: %.2f, ballYaw: %.2f, vtheta: %.2f", ballY, vy, ballYaw, vtheta));
+        
+        brain->client->setVelocity(vx, vy, vtheta, false, false, false);
+    }
+    else {
+        // Original adjust logic for strikers
+        double turnThreshold, vxLimit, vyLimit, vthetaLimit, range, st_far, st_near, vtheta_factor, NEAR_THRESHOLD;
+        getInput("near_threshold", NEAR_THRESHOLD);
+        getInput("tangential_speed_far", st_far);
+        getInput("tangential_speed_near", st_near);
+        getInput("vtheta_factor", vtheta_factor);
+        getInput("turn_threshold", turnThreshold);
+        getInput("vx_limit", vxLimit);
+        getInput("vy_limit", vyLimit);
+        getInput("vtheta_limit", vthetaLimit);
+        getInput("range", range);
+        log(format("ballX: %.1f ballY: %.1f ballYaw: %.1f", brain->data->ball.posToRobot.x, brain->data->ball.posToRobot.y, brain->data->ball.yawToRobot));
+        double NO_TURN_THRESHOLD, TURN_FIRST_THRESHOLD;
+        getInput("no_turn_threshold", NO_TURN_THRESHOLD);
+        getInput("turn_first_threshold", TURN_FIRST_THRESHOLD);
+
+
+        double vx = 0, vy = 0, vtheta = 0;
+        double kickDir = brain->data->kickDir;
+        double dir_rb_f = brain->data->robotBallAngleToField; 
+        double deltaDir = toPInPI(kickDir - dir_rb_f);
+        double ballRange = brain->data->ball.range;
+        double ballYaw = brain->data->ball.yawToRobot;
+        // double st = cap(fabs(deltaDir), st_far, st_near);
+        double st = st_far; 
+        double R = ballRange; 
+        double r = range;
+        double sr = cap(R - r, 0.5, 0); 
+        log(format("R: %.2f, r: %.2f, sr: %.2f", R, r, sr));
+
+        log(format("deltaDir = %.1f", deltaDir));
+        if (fabs(deltaDir) * R < NEAR_THRESHOLD) {
+            log("use near speed");
+            st = st_near;
+            // sr = 0.;
+            // vxLimit = 0.1;
+        }
+
+        double theta_robot_f = brain->data->robotPoseToField.theta; 
+        double thetat_r = dir_rb_f + M_PI / 2 * (deltaDir > 0 ? -1.0 : 1.0) - theta_robot_f; 
+        double thetar_r = dir_rb_f - theta_robot_f; 
+
+        vx = st * cos(thetat_r) + sr * cos(thetar_r); 
+        vy = st * sin(thetat_r) + sr * sin(thetar_r); 
+        // vtheta = toPInPI(ballYaw + st / R * (deltaDir > 0 ? 1.0 : -1.0)); 
+        vtheta = ballYaw;
+        vtheta *= vtheta_factor; 
+
+        if (fabs(ballYaw) < NO_TURN_THRESHOLD) vtheta = 0.; 
+        if (
+            fabs(ballYaw) > TURN_FIRST_THRESHOLD 
+            && fabs(deltaDir) < M_PI / 4
+        ) { 
+            vx = 0;
+            vy = 0;
+        }
+
+        vx = cap(vx, vxLimit, -0.);
+        vy = cap(vy, vyLimit, -vyLimit);
+        vtheta = cap(vtheta, vthetaLimit, -vthetaLimit);
+        
+        log(format("vx: %.1f vy: %.1f vtheta: %.1f", vx, vy, vtheta));
+        brain->client->setVelocity(vx, vy, vtheta);
+    }
     return NodeStatus::SUCCESS;
 }
 
@@ -974,6 +1005,15 @@ NodeStatus GoalieDecide::tick()
     auto color = 0xFFFFFFFF; 
     bool iKnowBallPos = brain->tree->getEntry<bool>("ball_location_known");
     bool tmBallPosReliable = brain->tree->getEntry<bool>("tm_ball_pos_reliable");
+
+    // Penalty area check
+    auto fd = brain->config->fieldDimensions;
+    auto ball = brain->data->ball.posToField;
+    bool ballInPenaltyArea = (
+        ball.x >= -fd.length/2 && ball.x <= -fd.length/2 + fd.penaltyAreaLength &&
+        ball.y >= -fd.penaltyAreaWidth/2 && ball.y <= fd.penaltyAreaWidth/2
+    );
+    
     if (!(iKnowBallPos || tmBallPosReliable))
     {
         newDecision = "find";
@@ -983,16 +1023,18 @@ NodeStatus GoalieDecide::tick()
     {
         newDecision = "retreat";
         color = 0xFF00FFFF;
-    } else if (ballRange > chaseRangeThreshold * (lastDecision == "chase" ? 0.9 : 1.0))
+    } // Only allow chase if ball is in penalty area
+    else if (ballInPenaltyArea && ballRange > chaseRangeThreshold * (lastDecision == "chase" ? 0.9 : 1.0))
     {
         newDecision = "chase";
         color = 0x00FF00FF;
     }
-    else if (angleIsGood)
+    else if (ballInPenaltyArea && angleIsGood)
     {
         newDecision = "kick";
         color = 0xFF0000FF;
     }
+    // If the ball is not in the penalty area, align the robot to the ball
     else
     {
         newDecision = "adjust";

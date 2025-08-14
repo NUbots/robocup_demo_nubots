@@ -272,6 +272,7 @@ public:
     static PortsList providedPorts()
     {
         return {
+            InputPort<bool>("align_mode", false, "If true, only simple horizontal alignment is performed (for goalkeepers)"),
             InputPort<double>("turn_threshold", 3.25, "球的角度大于这个值, 机器人先转身面向球, 直线运动先暂停"),
             InputPort<double>("vx_limit", 0.05, "调整过过程中 vx 的限制 [-limit, limit]"),
             InputPort<double>("vy_limit", 0.05, "调整过过程中 vy 的限制 [-limit, limit]"),
