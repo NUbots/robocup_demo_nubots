@@ -104,7 +104,7 @@ void BrainTree::initEntry()
     setEntry<string>("goalie_mode", "attack"); 
 
     setEntry<int>("test_choice", 0);
-    setEntry<int>("control_state", 0);
+    setEntry<int>("control_state", 3);
     setEntry<bool>("assist_chase", false);
     setEntry<bool>("assist_kick", false);
     setEntry<bool>("go_manual", false);
@@ -296,99 +296,123 @@ NodeStatus CamScanField::tick()
 
 NodeStatus Chase::tick()
 {
-    auto log = [=](string msg) {
-        brain->log->setTimeNow();
-        brain->log->log("debug/Chase4", rerun::TextLog(msg));
-    };
-    log("ticked");
-    
-    double vxLimit, vyLimit, vthetaLimit, dist, safeDist;
+    if (!brain->tree->getEntry<bool>("ball_location_known"))
+    {
+        brain->client->setVelocity(0, 0, 0);
+        return NodeStatus::SUCCESS;
+    }
+    double vxLimit, vyLimit, vthetaLimit, dist;
     getInput("vx_limit", vxLimit);
     getInput("vy_limit", vyLimit);
     getInput("vtheta_limit", vthetaLimit);
     getInput("dist", dist);
-    getInput("safe_dist", safeDist);
-
     bool avoidObstacle;
     brain->get_parameter("obstacle_avoidance.avoid_during_chase", avoidObstacle);
     double oaSafeDist;
     brain->get_parameter("obstacle_avoidance.chase_ao_safe_dist", oaSafeDist);
 
-    if (
-        brain->config->limitNearBallSpeed
-        && brain->data->ball.range < brain->config->nearBallRange
-    ) {
-        vxLimit = min(brain->config->nearBallSpeedLimit, vxLimit);
+    // Goal center position (opponent's goal)
+    double goalX = brain->config->fieldDimensions.length / 2 + 1.0;
+    double goalY = 0.0;
+
+    // Calculate ball-to-goal vector
+    double ballToGoalX = goalX - brain->data->ball.posToField.x;
+    double ballToGoalY = goalY - brain->data->ball.posToField.y;
+    double ballToGoalDist = sqrt(ballToGoalX * ballToGoalX + ballToGoalY * ballToGoalY);
+    
+    // Normalize
+    if (ballToGoalDist > 0.1)
+    {
+        ballToGoalX /= ballToGoalDist;
+        ballToGoalY /= ballToGoalDist;
+    }
+    else
+    {
+        ballToGoalX = 1.0;
+        ballToGoalY = 0.0;
     }
 
-    double ballRange = brain->data->ball.range;
-    double ballYaw = brain->data->ball.yawToRobot;
-    double kickDir = brain->data->kickDir;
-    double theta_br = atan2(
-        brain->data->robotPoseToField.y - brain->data->ball.posToField.y,
-        brain->data->robotPoseToField.x - brain->data->ball.posToField.x
-    );
-    double theta_rb = brain->data->robotBallAngleToField;
-    auto ballPos = brain->data->ball.posToField;
+    // Target position: behind ball along ball-to-goal vector
+    double targetX = brain->data->ball.posToField.x - ballToGoalX * dist;
+    double targetY = brain->data->ball.posToField.y - ballToGoalY * dist;
 
 
-    double vx, vy, vtheta;
-    Pose2D target_f, target_r; 
-    static string targetType = "direct"; 
-    static double circleBackDir = 1.0; 
-    double dirThreshold = M_PI / 2;
-    if (targetType == "direct") dirThreshold *= 1.2;
+    // If approaching from infront of ball, move to the side of the ball
+    if (brain->data->robotPoseToField.x - brain->data->ball.posToField.x > (_state == "chase" ? 1.0 : 0.0)) {
+        targetX = brain->data->ball.posToField.x - dist;
 
-
-    // 计算目标点
-    if (fabs(toPInPI(kickDir - theta_rb)) < dirThreshold) {
-        log("targetType = direct");
-        targetType = "direct";
-        target_f.x = ballPos.x - dist * cos(kickDir);
-        target_f.y = ballPos.y - dist * sin(kickDir);
-    } else {
-        targetType = "circle_back";
-        double cbDirThreshold = 0.0; 
-        cbDirThreshold -= 0.2 * circleBackDir; 
-        circleBackDir = toPInPI(theta_br - kickDir) > cbDirThreshold ? 1.0 : -1.0;
-        log(format("targetType = circle_back, circleBackDir = %.1f", circleBackDir));
-        double tanTheta = theta_br + circleBackDir * acos(min(1.0, safeDist/max(ballRange, 1e-5))); 
-        target_f.x = ballPos.x + safeDist * cos(tanTheta);
-        target_f.y = ballPos.y + safeDist * sin(tanTheta);
+        if (brain->data->robotPoseToField.y > brain->data->ball.posToField.y - _dir)
+            _dir = 1.0;
+        else
+            _dir = -1.0;
+        targetY = brain->data->ball.posToField.y + _dir * dist;
     }
-    target_r = brain->data->field2robot(target_f);
-    brain->log->setTimeNow();
-    brain->log->logBall("field/chase_target", Point({target_f.x, target_f.y, 0}), 0xFFFFFFFF, false, false);
-            
+
+    // Convert to robot coordinates
+    Pose2D target_f{targetX, targetY, 0};
+    Pose2D target_r = brain->data->field2robot(target_f);
+
+    // Calculate distance to target position
+    double distanceToTarget = sqrt(target_r.x * target_r.x + target_r.y * target_r.y);
+    
+    // Simple proportional control for position
+    double vx = target_r.x * 2.0;
+    double vy = target_r.y * 2.0;
+    
+    // Calculate final desired heading (toward goal)
+    double finalHeading = atan2(ballToGoalY, ballToGoalX);
+    double currentHeading = brain->data->robotPoseToField.theta;
+    
+    // Calculate heading error to final goal orientation
+    double finalHeadingError = finalHeading - currentHeading;
+    while (finalHeadingError > M_PI) finalHeadingError -= 2 * M_PI;
+    while (finalHeadingError < -M_PI) finalHeadingError += 2 * M_PI;
+    
+    // Progressive heading control based on distance to target
+    double vtheta;
+    if (distanceToTarget > 1.0)
+    {
+        // Far from target: Face the direction we're walking
+        double walkingDirection = atan2(target_r.y, target_r.x);
+        double walkingHeadingError = walkingDirection - 0.0; // Robot's current heading in robot frame is 0
+        while (walkingHeadingError > M_PI) walkingHeadingError -= 2 * M_PI;
+        while (walkingHeadingError < -M_PI) walkingHeadingError += 2 * M_PI;
+        vtheta = walkingHeadingError * 1.5;
+    }
+    else if (distanceToTarget > 0.5)
+    {
+        // Medium distance: Interpolate between walking direction and goal direction
+        double walkingDirection = atan2(target_r.y, target_r.x);
+        double walkingHeadingError = walkingDirection - 0.0;
+        while (walkingHeadingError > M_PI) walkingHeadingError -= 2 * M_PI;
+        while (walkingHeadingError < -M_PI) walkingHeadingError += 2 * M_PI;
+        
+        double progressFactor = (1.0 - distanceToTarget) / 0.7; // 0 at 1.0m, 1 at 0.3m
+        vtheta = walkingHeadingError * (1.0 - progressFactor) + finalHeadingError * progressFactor;
+    }
+    else
+    {
+        // Close to target: Full heading control toward goal
+        vtheta = finalHeadingError * 2.0;
+    }
+
+    // Apply limits
+    vx = cap(vx, vxLimit, -vxLimit);
+    vy = cap(vy, vyLimit, -vyLimit);
+    vtheta = cap(vtheta, vthetaLimit, -vthetaLimit);
+
+    // OBSTACLE AVOIDANCE ?
     double targetDir = atan2(target_r.y, target_r.x);
     double distToObstacle = brain->distToObstacle(targetDir);
+    double ballYaw = brain->data->ball.yawToRobot;
     if (avoidObstacle && distToObstacle < oaSafeDist) {
-        log("avoid obstacle");
         auto avoidDir = brain->calcAvoidDir(targetDir, oaSafeDist);
         const double speed = 0.5;
         vx = speed * cos(avoidDir);
         vy = speed * sin(avoidDir);
         vtheta = ballYaw;
-    } else {
-        vx = min(vxLimit, brain->data->ball.range);
-        vy = 0;
-        vtheta = targetDir;
-        if (fabs(targetDir) < 0.1 && ballRange > 2.0) vtheta = 0.0;
-        vx *= sigmoid((fabs(vtheta)), 1, 3); 
     }
 
-    vx = cap(vx, vxLimit, -vxLimit);
-    vy = cap(vy, vyLimit, -vyLimit);
-    vtheta = cap(vtheta, vthetaLimit, -vthetaLimit);
-
-    static double smoothVx = 0.0;
-    static double smoothVy = 0.0;
-    static double smoothVtheta = 0.0;
-    smoothVx = smoothVx * 0.7 + vx * 0.3;
-    smoothVy = smoothVy * 0.7 + vy * 0.3;
-    smoothVtheta = smoothVtheta * 0.7 + vtheta * 0.3;
-
-    // brain->client->setVelocity(smoothVx, smoothVy, smoothVtheta, false, false, false);
     brain->client->setVelocity(vx, vy, vtheta, false, false, false);
     return NodeStatus::SUCCESS;
 }
@@ -892,9 +916,10 @@ NodeStatus StrikerDecide::tick() {
     double kickAoSafeDist;
     brain->get_parameter("obstacle_avoidance.avoid_during_kick", avoidPushing);
     brain->get_parameter("obstacle_avoidance.kick_ao_safe_dist", kickAoSafeDist);
-    bool avoidKick = avoidPushing 
-        && brain->data->robotPoseToField.x < brain->config->fieldDimensions.length / 2 - brain->config->fieldDimensions.goalAreaLength
-        && brain->distToObstacle(brain->data->ball.yawToRobot) < kickAoSafeDist;
+    bool avoidKick = false; 
+    // avoidPushing 
+    //     && brain->data->robotPoseToField.x < brain->config->fieldDimensions.length / 2 - brain->config->fieldDimensions.goalAreaLength
+    //     && brain->distToObstacle(brain->data->ball.yawToRobot) < kickAoSafeDist;
 
     log(format("ballRange: %.2f, ballYaw: %.2f, ballX:%.2f, ballY: %.2f kickDir: %.2f, dir_rb_f: %.2f, angleGoodForKick: %d",
         ballRange, ballYaw, ballX, ballY, kickDir, dir_rb_f, angleGoodForKick));
@@ -1023,53 +1048,25 @@ NodeStatus GoalieDecide::tick()
     return NodeStatus::SUCCESS;
 }
 
-tuple<double, double, double> Kick::_calcSpeed() {
-    double vx, vy, msecKick;
-
-
-    double vxLimit, vyLimit;
-    getInput("vx_limit", vxLimit);
-    getInput("vy_limit", vyLimit);
-    int minMSecKick;
-    getInput("min_msec_kick", minMSecKick);
-    double vxFactor = brain->config->vxFactor;   
-    double yawOffset = brain->config->yawOffset; 
-
-
-    double adjustedYaw = brain->data->ball.yawToRobot + yawOffset;
-    double tx = cos(adjustedYaw) * brain->data->ball.range; 
-    double ty = sin(adjustedYaw) * brain->data->ball.range;
-
-    if (fabs(ty) < 0.01 && fabs(adjustedYaw) < 0.01)
-    { 
-        vx = vxLimit;
-        vy = 0.0;
-    }
-    else
-    { 
-        vy = ty > 0 ? vyLimit : -vyLimit;
-        vx = vy / ty * tx * vxFactor;
-        if (fabs(vx) > vxLimit)
-        {
-            vy *= vxLimit / vx;
-            vx = vxLimit;
-        }
-    }
-
-
-    double speed = norm(vx, vy);
-    msecKick = speed > 1e-5 ? minMSecKick + static_cast<int>(brain->data->ball.range / speed * 1000) : minMSecKick;
-    
-    return make_tuple(vx, vy, msecKick);
-}
-
 NodeStatus Kick::onStart()
 {
-    _minRange = brain->data->ball.range;
-    _speed = 0.5;
     _startTime = brain->get_clock()->now();
+    _initialBallRange = brain->data->ball.range;
+    return NodeStatus::RUNNING;
+}
 
+NodeStatus Kick::onRunning()
+{
+    // Check if we should timeout
+    int maxMSecKick;
+    getInput("max_msec_kick", maxMSecKick);
+    if (brain->msecsSince(_startTime) > maxMSecKick)
+    {
+        brain->client->setVelocity(0, 0, 0);
+        return NodeStatus::SUCCESS;
+    }
 
+    // OBSTACLE AVOIDANCE ?
     bool avoidPushing;
     double kickAoSafeDist;
     brain->get_parameter("obstacle_avoidance.avoid_during_kick", avoidPushing);
@@ -1085,71 +1082,47 @@ NodeStatus Kick::onStart()
         return NodeStatus::SUCCESS;
     }
 
-    // 发布运动指令
-    double angle = brain->data->ball.yawToRobot;
-    brain->client->crabWalk(angle, _speed);
-    return NodeStatus::RUNNING;
-}
-
-NodeStatus Kick::onRunning()
-{
-    auto log = [=](string msg) {
-        brain->log->setTimeNow();
-        brain->log->log("debug/Kick", rerun::TextLog(msg));
-    };
-
-
-    bool enableAbort;
-    brain->get_parameter("strategy.abort_kick_when_ball_moved", enableAbort);
-    auto ballRange = brain->data->ball.range;
-    const double MOVE_RANGE_THRESHOLD = 0.3;
-    const double BALL_LOST_THRESHOLD = 1000;  
-    if (
-        enableAbort 
-        && (
-            (brain->data->ballDetected && ballRange - _minRange > MOVE_RANGE_THRESHOLD) 
-            || brain->msecsSince(brain->data->ball.timePoint) > BALL_LOST_THRESHOLD 
-        )
-    ) {
-        log("ball moved, abort kick");
-        return NodeStatus::SUCCESS;
-    }
-
-
-    if (ballRange < _minRange) _minRange = ballRange;    
-
-    
-    bool avoidPushing;
-    brain->get_parameter("obstacle_avoidance.avoid_during_kick", avoidPushing);
-    double kickAoSafeDist;
-    brain->get_parameter("obstacle_avoidance.kick_ao_safe_dist", kickAoSafeDist);
-    if (
-        avoidPushing
-        && brain->data->robotPoseToField.x < brain->config->fieldDimensions.length / 2 - brain->config->fieldDimensions.goalAreaLength
-        && brain->distToObstacle(brain->data->ball.yawToRobot) < kickAoSafeDist
-    ) {
-        brain->client->setVelocity(-0.1, 0, 0);
-        return NodeStatus::SUCCESS;
-    }
-
-
-    double msecs = getInput<double>("min_msec_kick").value();
-    double speed = getInput<double>("speed_limit").value();
-    msecs = msecs + brain->data->ball.range / speed * 1000;
-    if (brain->msecsSince(_startTime) > msecs) { 
+    // Check if ball is no longer detected or moved significantly away (successful kick)
+    if (!brain->data->ballDetected || brain->data->ball.range > _initialBallRange + 0.5)
+    {
         brain->client->setVelocity(0, 0, 0);
         return NodeStatus::SUCCESS;
     }
 
+    // Get parameters
+    double vxLimit, vyLimit, kickRange;
+    getInput("vx_limit", vxLimit);
+    getInput("vy_limit", vyLimit);
+    getInput("kick_range", kickRange);
+    double vxFactor = brain->config->vxFactor;
+    double yawOffset = brain->config->yawOffset;
 
-    if (brain->data->ballDetected) { 
-        double angle = brain->data->ball.yawToRobot;
-        double speed = getInput<double>("speed_limit").value();
-        _speed += 0.1; 
-        speed = min(speed, _speed);
-        brain->client->crabWalk(angle, speed);
-    }
+    // Calculate real-time velocity based on current ball position
+    double adjustedYaw = brain->data->ball.yawToRobot - yawOffset;
+    double ballRange = brain->data->ball.range;
 
+    double tx = cos(adjustedYaw) * ballRange;
+    double ty = sin(adjustedYaw) * ballRange;
+
+    double vx, vy;
+
+    // Use proportional control for both x and y directions
+    double xGain = 2; // Proportional gain for x-direction
+    double yGain = 1.0; // Proportional gain for y-direction
+    double thetaGain = 1.75; // Proportional gain for theta-direction
+    
+    vx = tx * xGain;
+    vy = ty * yGain;
+    
+    // Cap velocities to limits
+    vx = cap(vx, vxLimit, -vxLimit);
+    vy = cap(vy, vyLimit, -vyLimit);
+
+    // Add some rotational velocity to align with ball
+    double vtheta = brain->data->ball.yawToRobot * thetaGain;
+    vtheta = cap(vtheta, 1.0, -1.0); // Limit rotational velocity
+
+    brain->client->setVelocity(vx, vy, vtheta, false, false, false);
     return NodeStatus::RUNNING;
 }
 
@@ -1355,7 +1328,6 @@ NodeStatus GoToReadyPosition::tick()
     bool isKickoff = brain->tree->getEntry<bool>("gc_is_kickoff_side");
     auto fd = brain->config->fieldDimensions;
 
-
     double tx = 0, ty = 0, ttheta = 0; 
     double longRangeThreshold = 1.0;
     double turnThreshold = 0.4;
@@ -1369,34 +1341,98 @@ NodeStatus GoToReadyPosition::tick()
     double vthetaLimit = 1.3;
     bool avoidObstacle = true;
 
-    if (role == "striker" && isKickoff) {
-        tx = - max(fd.circleRadius, 1.5);
-        ty = 0;
-        if (brain->config->numOfPlayers == 3 && brain->data->liveCount >= 2)
-        {
-            if (brain->isPrimaryStriker()) {
+    // Hard-coded ready positions based on player ID
+    int playerId = brain->config->playerId;
+    
+    if (role == "striker") {
+        // Striker positions based on player ID
+        switch (playerId) {
+            case 1: // Primary striker
+                tx = -fd.circleRadius - 1.0;
+                ty = 0.0;
+                ttheta = 0.0;
+                break;
+            case 2: // Secondary striker
+                tx = -fd.circleRadius - 1.0;
+                ty = 2.0;
+                ttheta = 0.0;
+                break;
+            case 3: // Third striker
+                tx = -fd.circleRadius - 1.0;
+                ty = -2.0;
+                ttheta = 0.0;
+                break;
+            case 4: // Fourth striker
+                tx = -fd.circleRadius - 2.5;
                 ty = 1.5;
-            } else {
+                ttheta = 0.0;
+                break;
+            case 5: // Fifth striker
+                tx = -fd.circleRadius - 2.5;
                 ty = -1.5;
-            }
+                ttheta = 0.0;
+                break;
+            default:
+                // Fallback to original logic for unknown player IDs
+                if (isKickoff) {
+                    tx = -max(fd.circleRadius, 1.5);
+                    ty = 0;
+                    if (brain->config->numOfPlayers == 3 && brain->data->liveCount >= 2) {
+                        if (brain->isPrimaryStriker()) {
+                            ty = 1.5;
+                        } else {
+                            ty = -1.5;
+                        }
+                    }
+                } else {
+                    tx = -fd.circleRadius * 1.0;
+                    ty = 0;
+                    if (brain->config->numOfPlayers == 3 && brain->data->liveCount >= 2) {
+                        if (brain->isPrimaryStriker()) {
+                            ty = 1.5;
+                        } else {
+                            ty = -1.5;
+                        }
+                    }
+                }
+                ttheta = 0;
+                break;
         }
-        ttheta = 0;
-    } else if (role == "striker" && !isKickoff) {
-        tx = - fd.circleRadius * 1.0;
-        ty = 0;
-        if (brain->config->numOfPlayers == 3 && brain->data->liveCount >= 2)
-        {
-            if (brain->isPrimaryStriker()) {
-                ty = 1.5;
-            } else {
-                ty = -1.5;
-            }
-        }
-        ttheta = 0;
     } else if (role == "goal_keeper") {
-        tx = -fd.length / 2.0 + fd.goalAreaLength;
-        ty = 0;
-        ttheta = 0;
+        // Goal keeper positions based on player ID
+        switch (playerId) {
+            case 1: // Primary goal keeper
+                tx = -fd.length / 2.0 + fd.goalAreaLength + 0.5;
+                ty = 0.0;
+                ttheta = 0.0;
+                break;
+            case 2: // Secondary goal keeper
+                tx = -fd.length / 2.0 + fd.goalAreaLength + 0.5;
+                ty = 1.5;
+                ttheta = 0.0;
+                break;
+            case 3: // Third goal keeper
+                tx = -fd.length / 2.0 + fd.goalAreaLength + 0.5;
+                ty = -1.5;
+                ttheta = 0.0;
+                break;
+            case 4: // Fourth goal keeper
+                tx = -fd.length / 2.0 + fd.goalAreaLength + 1.0;
+                ty = 2.0;
+                ttheta = 0.0;
+                break;
+            case 5: // Fifth goal keeper
+                tx = -fd.length / 2.0 + fd.goalAreaLength + 1.0;
+                ty = -2.0;
+                ttheta = 0.0;
+                break;
+            default:
+                // Fallback to original logic for unknown player IDs
+                tx = -fd.length / 2.0 + fd.goalAreaLength;
+                ty = 0;
+                ttheta = 0;
+                break;
+        }
     }
 
     brain->client->moveToPoseOnField2(tx, ty, ttheta, longRangeThreshold, turnThreshold, vxLimit, vyLimit, vthetaLimit, distTolerance / 1.5, distTolerance / 1.5, thetaTolerance, avoidObstacle);

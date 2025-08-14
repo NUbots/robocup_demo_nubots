@@ -1,9 +1,9 @@
 brain_node:
   ros__parameters:
     game:
-      team_id: 29 # must be consistant with GameControl
+      team_id: 57 # must be consistant with GameControl
       player_id: 1 # 1 | 2 | 3 | 4 | 5
-      field_type: "adult_size" # adult_size | kid_size | robo_league
+      field_type: "robo_league" # adult_size | kid_size | robo_league
       player_role: "striker" # striker | goal_keeper
       treat_person_as_robot: false 
       number_of_players: 3
@@ -13,7 +13,7 @@ brain_node:
       odom_factor: 1.2 
       vx_factor: 0.50 
       yaw_offset: 0.0 
-      vx_limit: 1.0 
+      vx_limit: 1.2 
       vy_limit: 0.4
       vtheta_limit: 1.2 
 
@@ -54,18 +54,18 @@ brain_node:
       chase_ao_safe_dist: 3.5 
 
     locator:
-      min_marker_count: 5
-      max_residual: 0.3 
+      min_marker_count: 2
+      max_residual: 3.0
 
-    enable_com: false 
+    enable_com: true 
 
     rerunLog:
       enable_tcp: false 
-      server_ip: "127.0.0.1:9876" 
+      server_ip: "192.168.10.111:9876" 
       enable_file: false 
       log_dir: "/home/booster/Workspace/rrlog"
       max_log_file_mins: 5.0 
-      img_interval: 1 
+      img_interval: 1
     
     recovery:
       retry_max_count: 2

@@ -303,9 +303,10 @@ public:
     static PortsList providedPorts()
     {
         return {
-            InputPort<double>("min_msec_kick", 500, "踢球动作最少执行多少毫秒"),
-            InputPort<double>("msecs_stablize", 1000, "稳定多少毫秒"),
-            InputPort<double>("speed_limit", 0.8, "速度最大值"),
+            InputPort<int>("max_msec_kick", 3000, "The maximum duration (in milliseconds) for executing a kick action"),
+            InputPort<double>("kick_range", 0.3, "Range threshold to reduce velocity for precision"),
+            InputPort<double>("vx_limit", 1.2, "vx limit"),
+            InputPort<double>("vy_limit", 0.4, "vy limit"),
         };
     }
 
@@ -319,11 +320,7 @@ public:
 private:
     Brain *brain;
     rclcpp::Time _startTime; 
-    string _state = "kick"; // stablize | kick
-    int _msecKick = 1000;    
-    double _speed; 
-    double _minRange; 
-    tuple<double, double, double> _calcSpeed();
+    double _initialBallRange = 0.0;
 };
 
 
@@ -404,6 +401,27 @@ private:
     Brain *brain;
 };
 
+/**
+ * @brief Moves robot to hard-coded ready position based on player ID and role
+ * 
+ * Ready positions are now hard-coded for each robot based on their player_id:
+ * 
+ * Strikers:
+ * - Player 1: Center striker (-circleRadius-1.0, 0.0)
+ * - Player 2: Right striker (-circleRadius-1.0, 2.0) 
+ * - Player 3: Left striker (-circleRadius-1.0, -2.0)
+ * - Player 4: Right back striker (-circleRadius-2.5, 1.5)
+ * - Player 5: Left back striker (-circleRadius-2.5, -1.5)
+ * 
+ * Goal Keepers:
+ * - Player 1: Center goalie (-length/2+goalAreaLength+0.5, 0.0)
+ * - Player 2: Right goalie (-length/2+goalAreaLength+0.5, 1.5)
+ * - Player 3: Left goalie (-length/2+goalAreaLength+0.5, -1.5)
+ * - Player 4: Right back goalie (-length/2+goalAreaLength+1.0, 2.0)
+ * - Player 5: Left back goalie (-length/2+goalAreaLength+1.0, -2.0)
+ * 
+ * Falls back to original dynamic logic for unknown player IDs
+ */
 class GoToReadyPosition : public SyncActionNode
 {
 public:

@@ -15,7 +15,5 @@ rsync -avz --delete \
   --exclude='CMakeCache.txt' \
   --exclude='CMakeFiles/' \
   --exclude='build/' \
+  --exclude='install/' \
   "${SRC_PATH}/" "${ROBOT_USER}@${ROBOT_IP}:${ROBOT_PATH}/"
-
-# Run the build script on the robot
-ssh "${ROBOT_USER}@${ROBOT_IP}" "cd ${ROBOT_PATH} && ./scripts/build.sh"

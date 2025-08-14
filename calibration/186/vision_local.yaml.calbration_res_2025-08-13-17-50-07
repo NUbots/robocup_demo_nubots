@@ -1,0 +1,83 @@
+camera:
+  type: realsense
+  intrin:
+    fx: 644.188599
+    fy: 643.19574
+    cx: 648.868896
+    cy: 360.189514
+    distortion_model: 0
+    distortion_coeffs:
+      []
+  extrin:
+    -
+      - -0.00872242171
+      - 0.0381410308
+      - 0.999234259
+      - -0.0121556278
+    -
+      - -0.999961853
+      - 8.50057677e-06
+      - -0.00872909743
+      - -0.0431746915
+    -
+      - -0.000341430859
+      - -0.999272406
+      - 0.0381394997
+      - 0.0117862159
+    -
+      - 0
+      - 0
+      - 0
+      - 1
+  pitch_compensation: 0
+  yaw_compensation: 0
+  z_compensation: 0
+detection_model:
+  model_path: ./src/vision/model/best_orin_10.3.engine
+  confidence_threshold: 0.2
+  nms_threshold: 0.4
+  classnames: [Ball, Goalpost, Person, LCross, TCross, XCross, PenaltyPoint, Opponent, BRMarker]
+  post_process:
+    single_ball_assumption: false
+    confidence_thresholds:
+      Ball: 0.4
+      Goalpost: 0.4
+      Person: 0.4
+      LCross: 0.3
+      TCross: 0.3
+      XCross: 0.3
+      PenaltyPoint: 0.3
+      Opponent: 0.4
+      BRMarker: 0.2
+segmentation_model:
+  model_path: ./src/vision/model/best_seg_orin_10.3.engine
+  confidence_threshold: 0.3
+  nms_threshold: 0.9
+use_depth: true
+ball_pose_estimator:
+  use_depth: false
+  radius: 0.109
+  down_sample_leaf_size: 0.01
+  cluster_distance_threshold: 0.01
+  fitting_distance_threshold: 0.01
+  minimum_cluster_size: 150
+  filter_distance: 1.2
+  check_ball_height: true
+human_like_pose_estimator:
+  use_depth: false
+  down_sample_leaf_size: 0.01
+  fitting_distance_threshold: 0.01
+  statistic_outlier_multiplier: 0.01
+field_marker_pose_estimator:
+  refine: false
+  line_segment_area_threshold: 75
+calibration:
+  offset:
+    exclude_distance: 2.0
+    zero_translation: true
+    field_marker_path: ./src/vision/config/field.yaml
+  handeye:
+    calibration_time: 2025-08-13-17-50-07
+    reprojection_error: 4.679287436475609
+misc:
+  save_data_nonstationary: true
