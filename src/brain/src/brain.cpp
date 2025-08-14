@@ -2211,9 +2211,9 @@ void Brain::detectProcessRobots(const vector<GameObject> &robotObjs) {
 
         if (rbt.label == "Opponent") {
             opponentRobots.push_back(rbt);
-        } else if (rbt.label == "Person" && config->treatPersonAsRobot) {
-            allyRobots.push_back(rbt);
-        } else if (rbt.label != "Opponent") {
+        } else if (rbt.label == "Person" && config->treatPersonAsRobot) { // just in case we do humans vs robots lol
+            opponentRobots.push_back(rbt);
+        } else {
             // future explicit ally label could be handled here
             allyRobots.push_back(rbt);
         }
