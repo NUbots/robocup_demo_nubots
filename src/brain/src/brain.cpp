@@ -2848,6 +2848,63 @@ Brain::WorldSnapshot Brain::getWorld() {
     return ws;
 }
 
+Brain::Graph Brain::buildAllyGoalGraph() {
+    Graph g;
+    auto ws = getWorld();
+    g.ballKnown = ws.ballKnown || ws.tmBallKnown;
+
+    // 1. 添加己方机器人节点
+    int nextId = 0;
+    for (const auto &ally : ws.allies) {
+        GraphNode n;
+        n.id = nextId++;
+        n.type = "ally";
+        n.x = ally.posToField.x;
+        n.y = ally.posToField.y;
+        g.nodes.push_back(n);
+    }
+
+    // 2. 敌方球门中心节点 (使用场地尺寸计算)
+    GraphNode goalNode;
+    goalNode.id = nextId++;
+    goalNode.type = "goal";
+    goalNode.x = config->fieldDimensions.length / 2.0;
+    goalNode.y = 0.0;
+    int goalId = goalNode.id;
+    g.nodes.push_back(goalNode);
+
+    // 3. 找到距离球最近的己方节点
+    if (!g.nodes.empty()) {
+        double ballX, ballY; bool haveBall = false;
+        if (ws.ballKnown) { ballX = ws.ball.posToField.x; ballY = ws.ball.posToField.y; haveBall = true; }
+        else if (ws.tmBallKnown) { ballX = ws.tmBall.posToField.x; ballY = ws.tmBall.posToField.y; haveBall = true; }
+        if (haveBall) {
+            double minDist = 1e9; int minId = -1;
+            for (auto &n : g.nodes) {
+                if (n.type != "ally") continue;
+                double dx = n.x - ballX; double dy = n.y - ballY;
+                double d = sqrt(dx*dx + dy*dy);
+                if (d < minDist) { minDist = d; minId = n.id; }
+            }
+            g.nearestAllyNodeId = minId;
+            // 4. 创建从最近己方到球门的有向边
+            if (minId >= 0) {
+                const GraphNode *from = nullptr; const GraphNode *to = nullptr;
+                for (auto &n : g.nodes) { if (n.id == minId) from = &n; if (n.id == goalId) to = &n; }
+                if (from && to) {
+                    GraphEdge e; e.from = from->id; e.to = to->id;
+                    double vx = to->x - from->x; double vy = to->y - from->y;
+                    double dist = sqrt(vx*vx + vy*vy);
+                    if (dist > 1e-6) { e.vx = vx/dist; e.vy = vy/dist; e.dist = dist; e.normalized = true; }
+                    else { e.vx = 0; e.vy = 0; e.dist = 0; e.normalized = true; }
+                    g.edges.push_back(e);
+                }
+            }
+        }
+    }
+    return g;
+}
+
 void Brain::updateLogFile() {
     if (config->rerunLogEnableFile && msecsSince(data->timeLastLogSave) > config->rerunLogMaxFileMins * 60000)
         log->updateLogFilePath();

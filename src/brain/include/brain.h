@@ -187,6 +187,29 @@ public:
     };
     WorldSnapshot getWorld();
 
+    // ---------------- 图结构: 我方机器人 + 敌方球门节点 ----------------
+    struct GraphNode {
+        int id = -1;                 // 节点编号
+        string type;                 // "ally" | "goal"
+        double x = 0.0;              // 场地坐标 x
+        double y = 0.0;              // 场地坐标 y
+    };
+    struct GraphEdge {
+        int from = -1;               // 源节点 id
+        int to = -1;                 // 目标节点 id
+        double vx = 0.0;             // 方向向量 x 分量 (未单位化或已单位化, 见 isNormalized)
+        double vy = 0.0;             // 方向向量 y 分量
+        double dist = 0.0;           // from -> to 的距离
+        bool normalized = true;      // vx, vy 是否为单位向量
+    };
+    struct Graph {
+        vector<GraphNode> nodes;
+        vector<GraphEdge> edges;
+        int nearestAllyNodeId = -1;  // 与球最近的己方节点 id
+        bool ballKnown = false;      // 球位置是否可靠
+    };
+    Graph buildAllyGoalGraph();
+
 
 private:
     void loadConfig();
