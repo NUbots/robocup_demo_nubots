@@ -2200,16 +2200,28 @@ void Brain::detectProcessRobots(const vector<GameObject> &robotObjs) {
     // }
     // // 注意这里不清理已经看不见的机器人, 而是在 updateMemory 中进行处理.
 
-    vector<GameObject> robots = {};
+    vector<GameObject> robots = {};            // all robots (legacy combined)
+    vector<GameObject> allyRobots = {};        // ally robots (non Opponent labels treated as ally)
+    vector<GameObject> opponentRobots = {};    // opponent robots (label == "Opponent")
     for (int i = 0; i < robotObjs.size(); i++) {
         auto rbt = robotObjs[i];
-        if (rbt.confidence < 50) continue;
-        
-        // else
+        if (rbt.confidence < 50) continue; // skip low confidence detections
+
         robots.push_back(rbt);
+
+        if (rbt.label == "Opponent") {
+            opponentRobots.push_back(rbt);
+        } else if (rbt.label == "Person" && config->treatPersonAsRobot) {
+            allyRobots.push_back(rbt);
+        } else if (rbt.label != "Opponent") {
+            // future explicit ally label could be handled here
+            allyRobots.push_back(rbt);
+        }
     }
 
-    data->setRobots(robots);
+    data->setRobots(robots);                 // keep existing aggregated storage
+    data->setAllyRobots(allyRobots);         // new ally vector
+    data->setOpponentRobots(opponentRobots); // new opponent vector
 }
 
 

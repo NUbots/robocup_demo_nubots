@@ -62,6 +62,26 @@ public:
         _robots = newVec;
     }
 
+    // --- Ally robots (teammates detected by vision) ---
+    inline vector<GameObject> getAllyRobots() const {
+        std::lock_guard<std::mutex> lock(_allyRobotsMutex);
+        return _allyRobots;
+    }
+    inline void setAllyRobots(const vector<GameObject>& newVec) {
+        std::lock_guard<std::mutex> lock(_allyRobotsMutex);
+        _allyRobots = newVec;
+    }
+
+    // --- Opponent robots ---
+    inline vector<GameObject> getOpponentRobots() const {
+        std::lock_guard<std::mutex> lock(_opponentRobotsMutex);
+        return _opponentRobots;
+    }
+    inline void setOpponentRobots(const vector<GameObject>& newVec) {
+        std::lock_guard<std::mutex> lock(_opponentRobotsMutex);
+        _opponentRobots = newVec;
+    }
+
 
     inline vector<GameObject> getGoalposts() const {
         std::lock_guard<std::mutex> lock(_goalpostsMutex);
@@ -165,6 +185,12 @@ public:
 private:
     vector<GameObject> _robots = {}; 
     mutable std::mutex _robotsMutex;
+
+    // Newly separated storage for ally & opponent robots (by vision label)
+    vector<GameObject> _allyRobots = {}; 
+    mutable std::mutex _allyRobotsMutex;
+    vector<GameObject> _opponentRobots = {}; 
+    mutable std::mutex _opponentRobotsMutex;
 
     vector<GameObject> _goalposts = {}; 
     mutable std::mutex _goalpostsMutex;
