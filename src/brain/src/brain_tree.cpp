@@ -653,33 +653,46 @@ NodeStatus Assist::tick() {
     auto robotPose = brain->data->robotPoseToField;
     string curRole = brain->tree->getEntry<string>("player_role");
 
-    bool isSecondary = false; 
-    bool has2Assists = false;
+    bool amILargestX = true;
+    bool amISmallestX = true;
+    double leaderX = 0;
+    double leaderY = 0;
     int selfIdx = brain->config->playerId - 1;
     for (int i = 0; i < HL_MAX_NUM_PLAYERS; i++) {
         if (i == selfIdx) continue; 
 
         auto tmStatus = brain->data->tmStatus[i];
         if (!tmStatus.isAlive) continue; 
-        if (tmStatus.isLead) continue; 
+        if (tmStatus.isLead){
+            leaderX = tmStatus.robotPoseToField.x;
+            leaderY = tmStatus.robotPoseToField.y;
+            continue;
+        } 
         if (tmStatus.role != "striker") continue; 
 
-        has2Assists = true;
-        log("2 assists found");
         if (tmStatus.robotPoseToField.x > robotPose.x) {
-            log("i am secondary");
-            isSecondary = true; 
+            amILargestX = false; 
+        } else if (tmStatus.robotPoseToField.x < robotPose.x) {
+            amISmallestX = false; 
         }
     }
-    log(format("has2Assists: %d, isSecondary: %d", has2Assists, isSecondary));
 
+    if leaderX == 0 && leaderY == 0 {
+        leaderX = ballPos.x;
+        leaderY = ballPos.y;
+    }
 
     Pose2D targetPose;
-    targetPose.x = isSecondary ? ballPos.x - 4.0 : ballPos.x - 2.0;
-    targetPose.x = max(targetPose.x, - fd.length / 2.0 + distToGoalline); 
-    targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) / (ballPos.x + fd.length / 2.0); 
-    if (has2Assists) { 
-        targetPose.y += isSecondary ? - 0.5 : 0.5;
+    if amILargestX {
+        targetPose.x = leaderX - 2.0;
+        if (leaderY > 0) {
+            targetPose.y = (leaderY - fd.width/2.0)/2.0;
+    } else if (amISmallestX) {
+        targetPose.x = leaderX - 7.0;
+        targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) / (ballPos.x + fd.length / 2.0);
+    } else {
+        targetPose.x = leaderX - 4.0;
+        targetPose.y = leaderY;
     }
 
 
@@ -726,6 +739,97 @@ NodeStatus Assist::tick() {
     brain->client->setVelocity(vx, vy, vtheta, false, false, false);
     return NodeStatus::SUCCESS;
 }
+
+// OG code
+// NodeStatus Assist::tick() {
+//     auto log = [=](string msg) {
+//         brain->log->setTimeNow();
+//         brain->log->log("debug/Assist", rerun::TextLog(msg));
+//     };
+//     log("ticked");
+
+//     double distTolerance = getInput<double>("dist_tolerance").value();
+//     double thetaTolerance = getInput<double>("theta_tolerance").value();
+//     double distToGoalline = getInput<double>("dist_to_goalline").value();
+
+//     auto fd = brain->config->fieldDimensions;
+//     auto ballPos = brain->data->ball.posToField;
+//     auto robotPose = brain->data->robotPoseToField;
+//     string curRole = brain->tree->getEntry<string>("player_role");
+
+//     bool isSecondary = false; 
+//     bool has2Assists = false;
+//     int selfIdx = brain->config->playerId - 1;
+//     for (int i = 0; i < HL_MAX_NUM_PLAYERS; i++) {
+//         if (i == selfIdx) continue; 
+
+//         auto tmStatus = brain->data->tmStatus[i];
+//         if (!tmStatus.isAlive) continue; 
+//         if (tmStatus.isLead) continue; 
+//         if (tmStatus.role != "striker") continue; 
+
+//         has2Assists = true;
+//         log("2 assists found");
+//         if (tmStatus.robotPoseToField.x > robotPose.x) {
+//             log("i am secondary");
+//             isSecondary = true; 
+//         }
+//     }
+//     log(format("has2Assists: %d, isSecondary: %d", has2Assists, isSecondary));
+
+
+//     Pose2D targetPose;
+//     targetPose.x = isSecondary ? ballPos.x - 4.0 : ballPos.x - 2.0;
+//     targetPose.x = max(targetPose.x, - fd.length / 2.0 + distToGoalline); 
+//     targetPose.y = ballPos.y * (targetPose.x + fd.length / 2.0) / (ballPos.x + fd.length / 2.0); 
+//     if (has2Assists) { 
+//         targetPose.y += isSecondary ? - 0.5 : 0.5;
+//     }
+
+
+//     double dist = norm(targetPose.x - robotPose.x, targetPose.y - robotPose.y);
+//     if ( 
+//         dist < distTolerance
+//         && fabs(brain->data->ball.yawToRobot) < thetaTolerance
+//     ) {
+//         brain->client->setVelocity(0, 0, 0);
+//         return NodeStatus::SUCCESS;
+//     }
+
+//     double vx, vy, vtheta;
+//     auto targetPose_r = brain->data->field2robot(targetPose);
+//     double targetDir = atan2(targetPose_r.y, targetPose_r.x);
+//     double distToObstacle = brain->distToObstacle(targetDir);
+
+//     bool avoidObstacle;
+//     brain->get_parameter("obstacle_avoidance.avoid_during_chase", avoidObstacle);
+//     double oaSafeDist;
+//     brain->get_parameter("obstacle_avoidance.chase_ao_safe_dist", oaSafeDist);
+
+//     if (avoidObstacle && distToObstacle < oaSafeDist) {
+//         log("avoid obstacle");
+//         auto avoidDir = brain->calcAvoidDir(targetDir, oaSafeDist);
+//         const double speed = 0.5;
+//         vx = speed * cos(avoidDir);
+//         vy = speed * sin(avoidDir);
+//         vtheta = brain->data->ball.yawToRobot;
+//     } else {
+//         vx = targetPose_r.x;
+//         vy = targetPose_r.y;
+//         vtheta = brain->data->ball.yawToRobot * 4.0; 
+//     }
+
+
+//     double vxLimit, vyLimit;
+//     getInput("vx_limit", vxLimit);
+//     getInput("vy_limit", vyLimit);
+//     vx = cap(vx, vxLimit, -1.0);     
+//     vy = cap(vy, vyLimit, -vyLimit);     
+    
+
+//     brain->client->setVelocity(vx, vy, vtheta, false, false, false);
+//     return NodeStatus::SUCCESS;
+// }
 
 NodeStatus Adjust::tick()
 {
