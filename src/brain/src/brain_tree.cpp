@@ -1065,9 +1065,9 @@ NodeStatus Kick::onRunning()
     double vx, vy;
 
     // Use proportional control for both x and y directions
-    double xGain = 2.0; // Proportional gain for x-direction
-    double yGain = 2.0; // Proportional gain for y-direction
-    double thetaGain = 1.0; // Proportional gain for theta-direction
+    double xGain = 2; // Proportional gain for x-direction
+    double yGain = 1.0; // Proportional gain for y-direction
+    double thetaGain = 1.75; // Proportional gain for theta-direction
     
     vx = tx * xGain;
     vy = ty * yGain;

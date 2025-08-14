@@ -80,7 +80,7 @@ public:
     double goalPostMarginForTouch = 0.1; 
     double ballConfidenceThreshold;        
     bool treatPersonAsRobot = false;    
-    double ballOutThreshold = 0.25;       
+    double ballOutThreshold = 2;       
     double tmBallDistThreshold = 4.0;      
     bool limitNearBallSpeed = true;        
     double nearBallSpeedLimit = 0.2;      
