@@ -252,6 +252,7 @@ public:
             InputPort<double>("vtheta_limit", 1.0, "追球时, 实时调整方向的速度不大于这个值"),
             InputPort<double>("dist", 0.1, "追球的目标是球后面多少距离"),
             InputPort<double>("safe_dist", 4.0, "circle back 时, 保持的安全距离"),
+            InputPort<double>("fixed_velocity_magnitude", 0.8, "Fixed velocity magnitude when walking towards the target"),
         };
     }
 
@@ -306,6 +307,8 @@ public:
             InputPort<double>("kick_range", 0.3, "Range threshold to reduce velocity for precision"),
             InputPort<double>("vx_limit", 1.2, "vx limit"),
             InputPort<double>("vy_limit", 0.4, "vy limit"),
+            InputPort<double>("fixed_velocity_magnitude", 0.8, "Fixed velocity magnitude when walking towards the ball"),
+            InputPort<double>("y_offset", -0.15, "y offset"),
         };
     }
 

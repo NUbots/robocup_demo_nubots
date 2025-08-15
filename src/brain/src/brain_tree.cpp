@@ -301,11 +301,12 @@ NodeStatus Chase::tick()
         brain->client->setVelocity(0, 0, 0);
         return NodeStatus::SUCCESS;
     }
-    double vxLimit, vyLimit, vthetaLimit, dist;
+    double vxLimit, vyLimit, vthetaLimit, dist, fixedVelocityMagnitude;
     getInput("vx_limit", vxLimit);
     getInput("vy_limit", vyLimit);
     getInput("vtheta_limit", vthetaLimit);
     getInput("dist", dist);
+    getInput("fixed_velocity_magnitude", fixedVelocityMagnitude);
     bool avoidObstacle;
     brain->get_parameter("obstacle_avoidance.avoid_during_chase", avoidObstacle);
     double oaSafeDist;
@@ -355,9 +356,12 @@ NodeStatus Chase::tick()
     // Calculate distance to target position
     double distanceToTarget = sqrt(target_r.x * target_r.x + target_r.y * target_r.y);
     
-    // Simple proportional control for position
-    double vx = target_r.x * 2.0;
-    double vy = target_r.y * 2.0;
+    // Calculate direction to target
+    double targetDirection = atan2(target_r.y, target_r.x);
+    
+    // Use fixed velocity magnitude in the direction of the target
+    double vx = fixedVelocityMagnitude * cos(targetDirection);
+    double vy = fixedVelocityMagnitude * sin(targetDirection);
     
     // Calculate final desired heading (toward goal)
     double finalHeading = atan2(ballToGoalY, ballToGoalX);
@@ -396,9 +400,17 @@ NodeStatus Chase::tick()
         vtheta = finalHeadingError * 2.0;
     }
 
-    // Apply limits
-    vx = cap(vx, vxLimit, -vxLimit);
-    vy = cap(vy, vyLimit, -vyLimit);
+    // Box clip velocities to preserve direction while respecting limits
+    double scale = 1.0;
+    if (fabs(vx) > vxLimit) {
+        scale = std::min(scale, vxLimit / fabs(vx));
+    }
+    if (fabs(vy) > vyLimit) {
+        scale = std::min(scale, vyLimit / fabs(vy));
+    }
+    
+    vx *= scale;
+    vy *= scale;
     vtheta = cap(vtheta, vthetaLimit, -vthetaLimit);
 
     // OBSTACLE AVOIDANCE ?
@@ -1048,36 +1060,45 @@ NodeStatus Kick::onRunning()
     }
 
     // Get parameters
-    double vxLimit, vyLimit, kickRange;
+    double vxLimit, vyLimit, kickRange, fixedVelocityMagnitude;
     getInput("vx_limit", vxLimit);
     getInput("vy_limit", vyLimit);
     getInput("kick_range", kickRange);
-    double vxFactor = brain->config->vxFactor;
+    getInput("fixed_velocity_magnitude", fixedVelocityMagnitude);
     double yawOffset = brain->config->yawOffset;
+    
+    // Get y offset for ball position adjustment (default to 0.15)
+    double yOffset = 0.15;
+    getInput("y_offset", yOffset);
 
-    // Calculate real-time velocity based on current ball position
+    // Calculate direction to ball (adjusted for yaw offset and y offset)
     double adjustedYaw = brain->data->ball.yawToRobot - yawOffset;
-    double ballRange = brain->data->ball.range;
-
-    double tx = cos(adjustedYaw) * ballRange;
-    double ty = sin(adjustedYaw) * ballRange;
-
-    double vx, vy;
-
-    // Use proportional control for both x and y directions
-    double xGain = 2; // Proportional gain for x-direction
-    double yGain = 1.0; // Proportional gain for y-direction
-    double thetaGain = 1.75; // Proportional gain for theta-direction
     
-    vx = tx * xGain;
-    vy = ty * yGain;
+    // Adjust ball position by y offset in robot coordinates
+    double adjustedBallX = brain->data->ball.posToRobot.x;
+    double adjustedBallY = brain->data->ball.posToRobot.y + yOffset;
     
-    // Cap velocities to limits
-    vx = cap(vx, vxLimit, -vxLimit);
-    vy = cap(vy, vyLimit, -vyLimit);
+    // Calculate direction to adjusted ball position
+    double adjustedDirection = atan2(adjustedBallY, adjustedBallX);
+    
+    // Use fixed velocity magnitude in the direction of the adjusted ball position
+    double vx = fixedVelocityMagnitude * cos(adjustedDirection);
+    double vy = fixedVelocityMagnitude * sin(adjustedDirection);
+    
+    // Box clip velocities to preserve direction while respecting limits
+    double scale = 1.0;
+    if (fabs(vx) > vxLimit) {
+        scale = std::min(scale, vxLimit / fabs(vx));
+    }
+    if (fabs(vy) > vyLimit) {
+        scale = std::min(scale, vyLimit / fabs(vy));
+    }
+    
+    vx *= scale;
+    vy *= scale;
 
     // Add some rotational velocity to align with ball
-    double vtheta = brain->data->ball.yawToRobot * thetaGain;
+    double vtheta = brain->data->ball.yawToRobot * 1.75;
     vtheta = cap(vtheta, 1.0, -1.0); // Limit rotational velocity
 
     brain->client->setVelocity(vx, vy, vtheta, false, false, false);

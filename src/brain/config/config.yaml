@@ -14,7 +14,7 @@ brain_node:
       vx_factor: 0.50 
       yaw_offset: 0.0 
       vx_limit: 1.2 
-      vy_limit: 0.4
+      vy_limit: 0.8
       vtheta_limit: 1.2 
 
     strategy:
@@ -60,7 +60,7 @@ brain_node:
     enable_com: true 
 
     rerunLog:
-      enable_tcp: false 
+      enable_tcp: true 
       server_ip: "192.168.10.111:9876" 
       enable_file: false 
       log_dir: "/home/booster/Workspace/rrlog"
