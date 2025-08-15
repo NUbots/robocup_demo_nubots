@@ -454,8 +454,8 @@ public:
         return {
             InputPort<double>("dist_tolerance", 0.8, "dist tolerance, within which considered arrived."),
             InputPort<double>("theta_tolerance", 0.8, "theta tolerance, winin which considered arrived."),
-            InputPort<double>("vx_limit", 0.1, "x speed limit"),
-            InputPort<double>("vy_limit", 0.1, "y speed limit"),
+            InputPort<double>("vx_limit", 0.7, "x speed limit"),
+            InputPort<double>("vy_limit", 0.3, "y speed limit"),
             InputPort<double>("dist_to_goalline", 2.5, "机器人站在门前多少距离"),
         };
     }
