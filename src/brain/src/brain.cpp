@@ -1092,6 +1092,18 @@ void Brain::joystickCallback(const booster_interface::msg::RemoteControllerState
         log->setTimeNow();
         log->log("debug/joystick", rerun::TextLog(msg));
     };
+    
+    // Enhanced joystick logging for debugging
+    static auto lastLogTime = get_clock()->now();
+    auto now = get_clock()->now();
+    if (now.seconds() - lastLogTime.seconds() > 0.1) { // Log every 100ms to avoid spam
+        string joyState = format("JOYSTICK: LT:%d RT:%d A:%d B:%d X:%d Y:%d LB:%d RB:%d LS:%d RS:%d Hat:%d%d%d%d", 
+            joy.lt, joy.rt, joy.a, joy.b, joy.x, joy.y, joy.lb, joy.rb, joy.ls, joy.rs, 
+            joy.hat_u, joy.hat_d, joy.hat_l, joy.hat_r);
+        prtDebug(joyState);
+        lastLogTime = now;
+    }
+    
     // prtDebug("joy!!", RED_CODE);
     string soundPack = config->soundPack;
 
@@ -1138,28 +1150,47 @@ void Brain::joystickCallback(const booster_interface::msg::RemoteControllerState
             tree->setEntry<int>("control_state", 1);
             client->setVelocity(0., 0., 0.);
             client->moveHead(0., 0.);
-            prtDebug("State => 1: CANCEL");
+            prtDebug("State => 1: CANCEL (LT + X)");
+            log_("CANCEL - LT + X");
             // playSound("sad");
         }
         if (joy.a)
         {
             tree->setEntry<int>("control_state", 2);
             tree->setEntry<bool>("odom_calibrated", false);
-            prtDebug("State => 2: RECALIBRATE");
+            prtDebug("State => 2: RECALIBRATE (LT + A) - Auto select left/right");
+            log_("RECALIBRATE - LT + A (Auto select)");
+            // playSound("search");
+        }
+        if (joy.ls)
+        {
+            tree->setEntry<int>("control_state", 4);
+            tree->setEntry<bool>("odom_calibrated", false);
+            prtDebug("State => 4: RECALIBRATE LEFT (LT + LS)");
+            log_("RECALIBRATE LEFT - LT + LS");
+            // playSound("search");
+        }
+        if (joy.rs)
+        {
+            tree->setEntry<int>("control_state", 5);
+            tree->setEntry<bool>("odom_calibrated", false);
+            prtDebug("State => 5: RECALIBRATE RIGHT (LT + RS)");
+            log_("RECALIBRATE RIGHT - LT + RS");
             // playSound("search");
         }
         if (joy.b)
         {
             tree->setEntry<int>("control_state", 3);
-            prtDebug("State => 3: ACTION");
+            prtDebug("State => 3: ACTION (LT + B)");
+            log_("ACTION - LT + B");
             // playSound("exited");
         }
         else if (joy.y)
         {
             string curRole = tree->getEntry<string>("player_role");
             curRole == "striker" ? tree->setEntry<string>("player_role", "goal_keeper") : tree->setEntry<string>("player_role", "striker");
-            prtDebug("SWITCH ROLE");
-            log_("SWITCH ROLE");
+            prtDebug("SWITCH ROLE (LT + Y)");
+            log_("SWITCH ROLE - LT + Y");
             // playSound("talk");
         }
     }
@@ -1172,7 +1203,8 @@ void Brain::joystickCallback(const booster_interface::msg::RemoteControllerState
     if (!joy.lt && !joy.rt) {
         if (joy.lb) {
             tree->setEntry<bool>("assist_chase", true);
-            prtDebug("Assit Chase");
+            prtDebug("Assit Chase (LB)");
+            log_("ASSIST CHASE - LB");
             playSound(soundPack + "-chase", 5000);
         } else {
             tree->setEntry<bool>("assist_chase", false);
@@ -1180,7 +1212,8 @@ void Brain::joystickCallback(const booster_interface::msg::RemoteControllerState
         }
         if (joy.rb) {
             tree->setEntry<bool>("assist_kick", true);
-            prtDebug("Assit Kick");
+            prtDebug("Assist Kick (RB)");
+            log_("ASSIST KICK - RB");
             playSound(soundPack + "-kick", 5000);
         } else {
             tree->setEntry<bool>("assist_kick", false);

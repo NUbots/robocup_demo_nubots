@@ -14,6 +14,8 @@ void RegisterLocatorNodes(BT::BehaviorTreeFactory &factory, Brain* brain)
 {
     REGISTER_LOCATOR_BUILDER(SelfLocate);
     REGISTER_LOCATOR_BUILDER(SelfLocateEnterField);
+    REGISTER_LOCATOR_BUILDER(SelfLocateEnterFieldLeft);
+    REGISTER_LOCATOR_BUILDER(SelfLocateEnterFieldRight);
     REGISTER_LOCATOR_BUILDER(SelfLocate1M);
     REGISTER_LOCATOR_BUILDER(SelfLocateBorder);
     REGISTER_LOCATOR_BUILDER(SelfLocate2T);
@@ -549,6 +551,110 @@ NodeStatus SelfLocateEnterField::tick()
     brain->tree->setEntry<bool>("odom_calibrated", true);
     brain->data->lastSuccessfulLocalizeTime = brain->get_clock()->now();
     prtDebug("定位成功: " + to_string(res.pose.x) + " " + to_string(res.pose.y) + " " + to_string(rad2deg(res.pose.theta)) + " Dur: " + to_string(res.msecs));
+
+    return NodeStatus::SUCCESS;
+}
+
+NodeStatus SelfLocateEnterFieldLeft::tick()
+{
+    auto log = [=](string msg, bool success) {
+        brain->log->setTimeNow();
+        brain->log->log("debug/SelfLocateEnterFieldLeft", rerun::TextLog(msg).with_level(success? rerun::TextLogLevel::Info : rerun::TextLogLevel::Error));
+    };
+    double interval = getInput<double>("msecs_interval").value();
+    if (brain->msecsSince(brain->data->lastSuccessfulLocalizeTime) < interval) return NodeStatus::SUCCESS;
+
+    auto markers = brain->data->getMarkersForLocator();
+    auto fd = brain->config->fieldDimensions;
+    PoseBox2D cEnterLeft = {-fd.length / 2, -fd.circleRadius, fd.width / 2, fd.width / 2 + 1, -M_PI / 2 - M_PI / 6, -M_PI / 2 + M_PI / 6};
+
+    auto res = brain->locator->locateRobot(markers, cEnterLeft);
+    string report = "Entering Left";
+
+    brain->log->setTimeNow();
+    string logPath = res.success ? "debug/locator_enter_field_left/success" : "debug/locator_enter_field_left/fail";
+    log(
+            format(
+                "%s success: %d  residual: %.2f resTolerance: %.2f markers: %d minMarkerCnt: %d ",
+                report.c_str(),
+                res.success, 
+                res.residual,
+                brain->locator->residualTolerance,
+                markers.size(),
+                brain->locator->minMarkerCnt
+            ),
+            res.success
+        );
+
+    brain->log->log(
+        "field/recal_enter_field_left", 
+        rerun::Arrows2D::from_vectors({{res.pose.x - brain->data->robotPoseToField.x, -res.pose.y + brain->data->robotPoseToField.y}})
+            .with_origins({{brain->data->robotPoseToField.x, - brain->data->robotPoseToField.y}})
+            .with_colors(res.success ? 0x00FF00FF: 0xFF0000FF)
+            .with_radii(0.01)
+            .with_draw_order(10)
+            .with_labels({"pfe_left"})
+    );
+
+    if (!res.success) return NodeStatus::SUCCESS; 
+
+    // else, 成功了.
+    brain->calibrateOdom(res.pose.x, res.pose.y, res.pose.theta);
+    brain->tree->setEntry<bool>("odom_calibrated", true);
+    brain->data->lastSuccessfulLocalizeTime = brain->get_clock()->now();
+    prtDebug("定位成功 (Left): " + to_string(res.pose.x) + " " + to_string(res.pose.y) + " " + to_string(rad2deg(res.pose.theta)) + " Dur: " + to_string(res.msecs));
+
+    return NodeStatus::SUCCESS;
+}
+
+NodeStatus SelfLocateEnterFieldRight::tick()
+{
+    auto log = [=](string msg, bool success) {
+        brain->log->setTimeNow();
+        brain->log->log("debug/SelfLocateEnterFieldRight", rerun::TextLog(msg).with_level(success? rerun::TextLogLevel::Info : rerun::TextLogLevel::Error));
+    };
+    double interval = getInput<double>("msecs_interval").value();
+    if (brain->msecsSince(brain->data->lastSuccessfulLocalizeTime) < interval) return NodeStatus::SUCCESS;
+
+    auto markers = brain->data->getMarkersForLocator();
+    auto fd = brain->config->fieldDimensions;
+    PoseBox2D cEnterRight = {-fd.length / 2, -fd.circleRadius, -fd.width / 2 - 1, -fd.width / 2, M_PI / 2 - M_PI / 6, M_PI / 2 + M_PI / 6};
+
+    auto res = brain->locator->locateRobot(markers, cEnterRight);
+    string report = "Entering Right";
+
+    brain->log->setTimeNow();
+    string logPath = res.success ? "debug/locator_enter_field_right/success" : "debug/locator_enter_field_right/fail";
+    log(
+            format(
+                "%s success: %d  residual: %.2f resTolerance: %.2f markers: %d minMarkerCnt: %d ",
+                report.c_str(),
+                res.success, 
+                res.residual,
+                brain->locator->residualTolerance,
+                markers.size(),
+                brain->locator->minMarkerCnt
+            ),
+            res.success
+        );
+
+    brain->log->log(
+        "field/recal_enter_field_right", 
+        rerun::Arrows2D::from_vectors({{res.pose.x - brain->data->robotPoseToField.x, -res.pose.y + brain->data->robotPoseToField.y}})
+            .with_origins({{brain->data->robotPoseToField.x, - brain->data->robotPoseToField.y}})
+            .with_colors(res.success ? 0x00FF00FF: 0xFF0000FF)
+            .with_radii(0.01)
+            .with_draw_order(10)
+            .with_labels({"pfe_right"})
+    );
+
+    if (!res.success) return NodeStatus::SUCCESS; 
+
+    // else, 成功了.
+    brain->calibrateOdom(res.pose.x, res.pose.y, res.pose.theta);
+    brain->tree->setEntry<bool>("odom_calibrated", true);
+    brain->data->lastSuccessfulLocalizeTime = brain->get_clock()->now();
+    prtDebug("定位成功 (Right): " + to_string(res.pose.x) + " " + to_string(res.pose.y) + " " + to_string(rad2deg(res.pose.theta)) + " Dur: " + to_string(res.msecs));
 
     return NodeStatus::SUCCESS;
 }

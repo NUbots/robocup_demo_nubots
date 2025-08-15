@@ -126,6 +126,42 @@ private:
     Brain *brain;
 };
 
+class SelfLocateEnterFieldLeft : public SyncActionNode
+{
+public:
+    SelfLocateEnterFieldLeft(const string &name, const NodeConfig &config, Brain *_brain) : SyncActionNode(name, config), brain(_brain) {}
+
+    NodeStatus tick() override;
+
+    static PortsList providedPorts()
+    {
+        return {
+            InputPort<double>("msecs_interval", 0, "防止过于频繁地校准, 如果上一次校准距离现在小于这个时间, 则不重新校准."),
+        };
+    };
+
+private:
+    Brain *brain;
+};
+
+class SelfLocateEnterFieldRight : public SyncActionNode
+{
+public:
+    SelfLocateEnterFieldRight(const string &name, const NodeConfig &config, Brain *_brain) : SyncActionNode(name, config), brain(_brain) {}
+
+    NodeStatus tick() override;
+
+    static PortsList providedPorts()
+    {
+        return {
+            InputPort<double>("msecs_interval", 0, "防止过于频繁地校准, 如果上一次校准距离现在小于这个时间, 则不重新校准."),
+        };
+    };
+
+private:
+    Brain *brain;
+};
+
 class SelfLocate1M : public SyncActionNode
 {
 public:
