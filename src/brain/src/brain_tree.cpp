@@ -739,11 +739,11 @@ NodeStatus Adjust::tick()
         return NodeStatus::SUCCESS;
     }
 
-    bool alignMode;
+    double alignMode;
     getInput("align_mode", alignMode);
     
     // Simple align mode for goalies - just align horizontally with the ball
-    if (alignMode) {
+    if (alignMode > 0.0) {
         double vyLimit, vthetaLimit;
         getInput("vy_limit", vyLimit);
         getInput("vtheta_limit", vthetaLimit);
@@ -1020,6 +1020,12 @@ NodeStatus GoalieDecide::tick()
         color = 0x0000FFFF;
     }
     else if (brain->data->ball.posToField.x > 0 - static_cast<double>(lastDecision == "retreat"))
+    {
+        newDecision = "retreat";
+        color = 0xFF00FFFF;
+    }
+    // if ball is in your half, and you are not within the penalty area, retreat
+    else if (brain->data->ball.posToField.x < 0.0 && (brain->data->robotPoseToField.x > -fd.length / 2 + fd.penaltyAreaLength || fabs(brain->data->robotPoseToField.y) > fd.penaltyAreaWidth))
     {
         newDecision = "retreat";
         color = 0xFF00FFFF;
