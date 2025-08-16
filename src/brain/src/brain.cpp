@@ -2962,7 +2962,6 @@ void Brain::statusReport() {
     } else {
         report = "";
         if (!camOK) report += "camera lost";
-        if (!gcOK) report += "gamecontrol lost";
     }
     if (lastReport != report) {
         speak(report);
