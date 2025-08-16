@@ -13,8 +13,8 @@ brain_node:
       odom_factor: 1.2 
       vx_factor: 0.50 
       yaw_offset: 0.0 
-      vx_limit: 1.2 
-      vy_limit: 0.8
+      vx_limit: 1.75 
+      vy_limit: 0.9
       vtheta_limit: 1.2 
 
     strategy:
