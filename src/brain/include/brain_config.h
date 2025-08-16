@@ -89,6 +89,8 @@ public:
     int pfMinMarkerCnt = 5;
     double pfMaxResidual = 0.3;
 
+    string enterFieldSide = "EITHER";  // EITHER, LEFT, or RIGHT
+
     bool soundEnable = false;
     string soundPack = "espeak";
 

@@ -97,6 +97,7 @@ Brain::Brain() : rclcpp::Node("brain_node")
     
     declare_parameter<int>("locator.min_marker_count", 5);
     declare_parameter<double>("locator.max_residual", 0.3);
+    declare_parameter<string>("locator.enter_field_side", "EITHER");
 
     declare_parameter<bool>("enable_com", false);
 
@@ -221,6 +222,7 @@ void Brain::loadConfig()
 
     get_parameter("locator.min_marker_count", config->pfMinMarkerCnt);
     get_parameter("locator.max_residual", config->pfMaxResidual);
+    get_parameter("locator.enter_field_side", config->enterFieldSide);
 
     get_parameter("enable_com", config->enableCom);
 

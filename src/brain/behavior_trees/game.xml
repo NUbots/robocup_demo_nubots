@@ -20,10 +20,9 @@
             </ReactiveSequence>
 
             <ReactiveSequence _while="control_state==2" name="需要 pickup 时， 先走到进场位置， 然后按下 LT + A, 重新校准定位, 等待数秒后, 按 LT + B 继续比赛">
-                <Speak text="locate" />
                 <CamScanField  _while="!odom_calibrated"/>
                 <SubTree ID="CamFindAndTrackBall" _autoremap="true" _while="odom_calibrated" />
-                <SelfLocateEnterField />
+                <SelfLocateEnterField enter_field_side="LEFT" />
 
             </ReactiveSequence>
 

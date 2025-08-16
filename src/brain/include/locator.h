@@ -119,6 +119,7 @@ public:
     {
         return {
             InputPort<double>("msecs_interval", 1000, "防止过于频繁地校准, 如果上一次校准距离现在小于这个时间, 则不重新校准."),
+            InputPort<string>("enter_field_side", "EITHER", "EITHER, LEFT, or RIGHT - which side of the field to prefer for localization"),
         };
     };
 

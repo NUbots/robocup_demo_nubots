@@ -485,53 +485,94 @@ NodeStatus SelfLocateEnterField::tick()
     PoseBox2D cEnterLeft = {-fd.length / 2, -fd.circleRadius, fd.width / 2, fd.width / 2 + 1, -M_PI / 2 - M_PI / 6, -M_PI / 2 + M_PI / 6};
     PoseBox2D cEnterRight = {-fd.length / 2, -fd.circleRadius, -fd.width / 2 - 1, -fd.width / 2, M_PI / 2 - M_PI / 6, M_PI / 2 + M_PI / 6};
 
-
-    auto resLeft = brain->locator->locateRobot(markers, cEnterLeft);
-    auto resRight = brain->locator->locateRobot(markers, cEnterRight);
+    // Check if input port is provided, otherwise use configuration
+    string sidePreference;
+    auto sideInput = getInput<string>("enter_field_side");
+    if (sideInput.has_value()) {
+        sidePreference = sideInput.value();
+    } else {
+        sidePreference = brain->config->enterFieldSide;
+    }
+    
     LocateResult res;
+    string report = "";
 
-    static string lastReport = "";
-    string report = lastReport;
-    if (resLeft.success && !resRight.success) {
+    if (sidePreference == "LEFT") {
+        // Only try left side
+        auto resLeft = brain->locator->locateRobot(markers, cEnterLeft);
         res = resLeft;
         report = "Entering Left";
     }
-    else if (!resLeft.success && resRight.success) {
+    else if (sidePreference == "RIGHT") {
+        // Only try right side
+        auto resRight = brain->locator->locateRobot(markers, cEnterRight);
         res = resRight;
         report = "Entering Right";
     }
-    else if (resLeft.success && resRight.success) {
-        if (resLeft.residual < resRight.residual) {
+    else {
+        // EITHER - try both sides and choose the best one (original behavior)
+        auto resLeft = brain->locator->locateRobot(markers, cEnterLeft);
+        auto resRight = brain->locator->locateRobot(markers, cEnterRight);
+
+        if (resLeft.success && !resRight.success) {
             res = resLeft;
             report = "Entering Left";
         }
-        else {
+        else if (!resLeft.success && resRight.success) {
             res = resRight;
             report = "Entering Right";
         }
-    } else res = resLeft;
-
-    if (report != lastReport) {
-        brain->speak(report);
-        lastReport = report;
+        else if (resLeft.success && resRight.success) {
+            if (resLeft.residual < resRight.residual) {
+                res = resLeft;
+                report = "Entering Left";
+            }
+            else {
+                res = resRight;
+                report = "Entering Right";
+            }
+        } else {
+            res = resLeft;
+            report = "Entering Left (fallback)";
+        }
     }
 
     brain->log->setTimeNow();
     string logPath = res.success ? "debug/locator_enter_field/success" : "debug/locator_enter_field/fail";
-    log(
-            format(
-                "%s left success: %d  left residual: %.2f  right success %d  right residual %.2f resTolerance: %.2f markers: %d minMarkerCnt: %d ",
-                report.c_str(),
-                resLeft.success, 
-                resLeft.residual,
-                resRight.success,
-                resRight.residual,
-                brain->locator->residualTolerance,
-                markers.size(),
-                brain->locator->minMarkerCnt
-            ),
-            res.success
-        );
+    
+    if (sidePreference == "EITHER") {
+        // For EITHER mode, we need both results for logging
+        auto resLeft = brain->locator->locateRobot(markers, cEnterLeft);
+        auto resRight = brain->locator->locateRobot(markers, cEnterRight);
+        log(
+                format(
+                    "%s left success: %d  left residual: %.2f  right success %d  right residual %.2f resTolerance: %.2f markers: %d minMarkerCnt: %d ",
+                    report.c_str(),
+                    resLeft.success, 
+                    resLeft.residual,
+                    resRight.success,
+                    resRight.residual,
+                    brain->locator->residualTolerance,
+                    markers.size(),
+                    brain->locator->minMarkerCnt
+                ),
+                res.success
+            );
+    } else {
+        // For LEFT/RIGHT mode, only log the relevant side
+        log(
+                format(
+                    "%s success: %d  residual: %.2f resTolerance: %.2f markers: %d minMarkerCnt: %d ",
+                    report.c_str(),
+                    res.success, 
+                    res.residual,
+                    brain->locator->residualTolerance,
+                    markers.size(),
+                    brain->locator->minMarkerCnt
+                ),
+                res.success
+            );
+    }
 
     brain->log->log(
         "field/recal_enter_field", 
@@ -544,6 +585,12 @@ NodeStatus SelfLocateEnterField::tick()
     );
 
     if (!res.success) return NodeStatus::SUCCESS; 
+
+    static string lastReport = "";
+    if (report != lastReport) {
+        brain->speak(report);
+        lastReport = report;
+    }
 
 
     // else, 成功了.

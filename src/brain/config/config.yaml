@@ -82,5 +82,5 @@ brain_node:
 
     # for fun and debug
     sound:
-      enable: false 
+      enable: true 
       sound_pack: "espeak" 
