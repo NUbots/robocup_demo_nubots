@@ -14,7 +14,21 @@ sudo apt-get install ros-humble-backward-ros
 
 ## Build and Run
 
-### Note    
+### Note on Docker
+
+This repo contains a Dockerfile for setting up ROS2 as well as the repo's dependencies. To use it:
+
+```sh
+# Running ROS2 (add --build to build image instead of pulling it)
+docker compose run ros2
+
+# Run in another terminal to access container
+docker compose exec -it ros2 bash
+```
+
+Also, note that you will need to download the Booster Runner and Isaac Sim binaries from the [Booster wiki](https://booster.feishu.cn/wiki/XY6Kwrq1bizif4kq7X9c14twnle) page and copy them into the repo; don't worry about where in the repo it should be, since the repo folder gets mounted by Docker into the container. You'll also have to download Isaac Sim [here](https://download.isaacsim.omniverse.nvidia.com/isaac-sim-standalone%404.2.0-rc.18%2Brelease.16044.3b2ed111.gl.linux-x86_64.release.zip) and extract it so that the files in the .zip file can be accessed in `~/.local/share/ov/pkg/isaac-sim-4.2.0`.
+
+### Note on Jetpack
 This repo support both jetpack 6.0 and 6.2. If the repo is deployed on jetpack 6.2 machine, please modify src/vision/config/vision.yaml to selelct correct trt model
 
 vision.yaml for jetpack 6.0 machine
@@ -32,6 +46,8 @@ detection_model:
 
 To decide jetpack version, please execute `dpkg -l | grep jetpack` on host.
 
+## Scripts
+```sh
 # Build the programs
 ./scripts/build.sh
 
@@ -42,17 +58,19 @@ To decide jetpack version, please execute `dpkg -l | grep jetpack` on host.
 ./scripts/start.sh
 ```
 
-## Documents
+# Documents
 [Chinese Version](https://booster.feishu.cn/wiki/P5kJw6nDGib5wskZ3Yfc289lnIg)
 
 [English Version](https://booster.feishu.cn/wiki/XY6Kwrq1bizif4kq7X9c14twnle)
-```
 
 
 # Simulation Installation for NUbots Team
 The easiest way to install the simulation environment is to use the official NUbots documentation guided software version. Due to Intel RealSense only support to linux kernel 6.8 so please make sure your kernel version is 6.8 or lower. If you are using a newer kernel, please downgrade it to 6.8.
 
 ## Basic Requirements
+
+### Dependencies
+
 1. Ubuntu 22.04
 2. Nvidia GPU with driver version 535
 3. Cuda 12.2
